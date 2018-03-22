@@ -24,18 +24,20 @@ module Type.Story
   , storyLinks
   , tagIDs
   , Type.Story.authorColID
+  , validStoryPutObject
+  , validStoryInsertObject
   ) where
 
 import Data.Monoid ((<>))
 import Data.Time (UTCTime)
 import GHC.Generics (Generic)
 
-import Data.Text (pack)
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import Data.Text (Text, length)
+import Data.Text (Text, length, pack)
 import Data.Aeson
   ( ToJSON(..)
   , FromJSON(..)
+  , Value
   , object
   , withObject
   , (.=)
@@ -264,6 +266,16 @@ instance FromJSON StoryInsert where
       <*> pure ()
       <*> pure ()
 
+
+validStoryInsertObject :: Value
+validStoryInsertObject = object
+  [ "title" .= ("The title for the new story" :: Text)
+  , "author" .= ("The author-id for the story (Should be in the DB)" :: Text)
+  , "genre" .= ("One of " ++ show allGenres)
+  , "tags" .= ("The list of tag-id's for this story" :: Text)
+  , "story" .= ("The story itself" :: Text)
+  ]
+
 instance FromJSON StoryPut where
   parseJSON = withObject "story" $ \o -> Story
       <$> o .: "id"
@@ -278,6 +290,18 @@ instance FromJSON StoryPut where
       <*> pure ()
       <*> pure ()
 
+
+validStoryPutObject :: Value
+validStoryPutObject = object
+  [ "id" .= ("The id of the story which should be in the DB" :: Text)
+  , "title" .= ("The new/old title for the story with the above id" :: Text)
+  , "author" .= ("The new/old author-id for the story with the above id" :: Text)
+  , "read-count" .= ("The new/old read-count for the story with the above id" :: Text)
+  , "stars" .= ("The new/old stars count for the story with the above id" :: Text)
+  , "genre" .= ("One of " ++ show allGenres)
+  , "tags" .= ("The new/old list of tag-id's for this story" :: Text)
+  , "story" .= ("The new/old value for the story" :: Text)
+  ]
 
 -- JSON API
 

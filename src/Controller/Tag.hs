@@ -32,13 +32,13 @@ import Controller.Basic (invalidPayload)
 
 post :: ActionA
 post = do
-  tag' :: TagInsert <- jsonData `rescue` invalidPayload
+  tag' :: TagInsert <- jsonData `rescue` invalidPayload validTagInsertObject
   tagResource <- lift $ createTagResource tag'
   json tagResource
 
 postBatch :: ActionA
 postBatch = do
-  tags :: [TagInsert] <- jsonData `rescue` invalidPayload
+  tags :: [TagInsert] <- jsonData `rescue` invalidPayload validTagInsertObject
   tagResources <- lift $ createTagResources tags
   json tagResources
 
@@ -64,7 +64,7 @@ get = do
 put :: ActionA
 put = do
   tagId' :: Int <- param "id"
-  tag' :: TagInsert <- jsonData `rescue` invalidPayload
+  tag' :: TagInsert <- jsonData `rescue` invalidPayload validTagInsertObject
   let
     tag'' = mkTagPut tagId' (tagName tag') (tagGenre tag')
 
@@ -74,7 +74,7 @@ put = do
 
 putBatch :: ActionA
 putBatch = do
-  tags :: [TagPut] <- jsonData `rescue` invalidPayload
+  tags :: [TagPut] <- jsonData `rescue` invalidPayload validTagPutObject
   tagResources <- lift $ updateTagResources tags
   json tagResources
 
@@ -84,7 +84,7 @@ putBatch = do
 
 deleteBatch :: ActionA
 deleteBatch = do
-  tags :: [Int] <- jsonData `rescue` invalidPayload
+  tags :: [Int] <- jsonData `rescue` invalidPayload undefined
   tagResources <- lift $ deleteTagResources tags
   json tagResources
 

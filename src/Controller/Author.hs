@@ -15,6 +15,7 @@ module Controller.Author
 
 import Control.Monad.Trans (lift)
 
+import Data.Aeson (Value)
 import Web.Scotty.Trans
   ( json
   , jsonData
@@ -32,13 +33,14 @@ import Controller.Basic (invalidPayload)
 
 post :: ActionA
 post = do
-  author' :: AuthorInsert <- jsonData `rescue` invalidPayload
+  author' :: AuthorInsert <- jsonData `rescue` invalidPayload validAuthorInsertObject
   authorResource <- lift $ createAuthorResource author'
   json authorResource
 
+
 postBatch :: ActionA
 postBatch = do
-  authors :: [AuthorInsert] <- jsonData `rescue` invalidPayload
+  authors :: [AuthorInsert] <- jsonData `rescue` invalidPayload validAuthorInsertObject
   authorResources <- lift $ createAuthorResources authors
   json authorResources
 
@@ -64,7 +66,7 @@ get = do
 put :: ActionA
 put = do
   authorId' :: Int <- param "id"
-  author' :: AuthorInsert <- jsonData `rescue` invalidPayload
+  author' :: AuthorInsert <- jsonData `rescue` invalidPayload validAuthorInsertObject
   let
     author'' = mkAuthorPut authorId' (authorName author')
 
@@ -74,7 +76,7 @@ put = do
 
 putBatch :: ActionA
 putBatch = do
-  authors :: [AuthorPut] <- jsonData `rescue` invalidPayload
+  authors :: [AuthorPut] <- jsonData `rescue` invalidPayload validAuthorPutObject
   authorResources <- lift $ updateAuthorResources authors
   json authorResources
 
@@ -84,7 +86,7 @@ putBatch = do
 
 deleteBatch :: ActionA
 deleteBatch = do
-  authors :: [Int] <- jsonData `rescue` invalidPayload
+  authors :: [Int] <- jsonData `rescue` invalidPayload deleteBatchExample
   authorResources <- lift $ deleteAuthorResources authors
   json authorResources
 
@@ -94,3 +96,9 @@ delete = do
   authorId' <- param "id"
   authorResource <- lift $ deleteAuthorResource authorId'
   either json json authorResource
+
+
+-- HELPERS
+
+deleteBatchExample :: Value
+deleteBatchExample = undefined

@@ -32,13 +32,13 @@ import Controller.Basic (invalidPayload)
 
 post :: ActionA
 post = do
-  story' :: StoryInsert <- jsonData `rescue` invalidPayload
+  story' :: StoryInsert <- jsonData `rescue` invalidPayload validStoryInsertObject
   storyResource <- lift $ createStoryResource story'
   json storyResource
 
 postBatch :: ActionA
 postBatch = do
-  stories :: [StoryInsert] <- jsonData `rescue` invalidPayload
+  stories :: [StoryInsert] <- jsonData `rescue` invalidPayload validStoryInsertObject
   storyResources <- lift $ createStoryResources stories
   json storyResources
 
@@ -64,7 +64,7 @@ get = do
 put :: ActionA
 put = do
   storyId' :: Int <- param "id"
-  story' :: StoryPut <- jsonData `rescue` invalidPayload
+  story' :: StoryPut <- jsonData `rescue` invalidPayload validStoryPutObject
 
   storyResource <- lift $ updateStoryResource story'
   either json json storyResource
@@ -72,7 +72,7 @@ put = do
 
 putBatch :: ActionA
 putBatch = do
-  stories :: [StoryPut] <- jsonData `rescue` invalidPayload
+  stories :: [StoryPut] <- jsonData `rescue` invalidPayload validStoryPutObject
   storyResources <- lift $ updateStoryResources stories
   json storyResources
 
@@ -82,7 +82,7 @@ putBatch = do
 
 deleteBatch :: ActionA
 deleteBatch = do
-  stories :: [Int] <- jsonData `rescue` invalidPayload
+  stories :: [Int] <- jsonData `rescue` invalidPayload undefined
   storyResources <- lift $ deleteStoryResources stories
   json storyResources
 

@@ -62,8 +62,8 @@ health = do
   finish
 
 
-invalidPayload :: a -> ActionT Error WithConfig b
-invalidPayload _ = do
+invalidPayload :: Value -> a -> ActionT Error WithConfig b
+invalidPayload example _ = do
   status status400
-  json $ object ["error" .= String "Invalid payload"]
+  json $ object ["error" .= String "Invalid payload", "schema" .= example]
   finish

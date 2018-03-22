@@ -23,18 +23,20 @@ module Type.Author
   , authorColName
   , authorLinks
   , authorIdentifier
+  , validAuthorPutObject
+  , validAuthorInsertObject
   ) where
 
 import Data.Monoid ((<>))
 import Data.Time (UTCTime)
 import GHC.Generics (Generic)
 
-import Data.Text (pack)
+import Data.Text (Text, pack)
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import Data.Text (Text)
 import Data.Aeson
   ( ToJSON(..)
   , FromJSON(..)
+  , Value
   , object
   , withObject
   , (.=)
@@ -91,6 +93,7 @@ type AuthorRead = Author'
 instance Versioned Author where
   createdAt = _createdAt
   updatedAt = _updatedAt
+
 
 -- Magic
 $(makeAdaptorAndInstance "pAuthor" ''Author')
@@ -170,12 +173,26 @@ instance FromJSON AuthorInsert where
     <*> pure ()
     <*> pure ()
 
+
+validAuthorInsertObject :: Value
+validAuthorInsertObject = object
+  [ "name" .= ("The name you want to give to the author you are creating" :: Text)
+  ]
+
 instance FromJSON AuthorPut where
   parseJSON = withObject "author" $ \o -> Author
     <$> o .: "id"
     <*> o .: "name"
     <*> pure ()
     <*> pure ()
+
+
+validAuthorPutObject :: Value
+validAuthorPutObject = object
+  [ "id" .= ("The id of the author which should be in the DB" :: Text)
+  , "name" .= ("The name you want to give to the author with the above id" :: Text)
+  ]
+
 
 -- JSON API
 

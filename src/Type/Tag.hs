@@ -24,18 +24,20 @@ module Type.Tag
   , tagGenre
   , tagLinks
   , tagIdentifier
+  , validTagInsertObject
+  , validTagPutObject
   ) where
 
 import Data.Monoid ((<>))
 import Data.Time (UTCTime)
 import GHC.Generics (Generic)
 
-import Data.Text (pack)
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Data.Aeson
   ( ToJSON(..)
   , FromJSON(..)
+  , Value
   , object
   , withObject
   , (.=)
@@ -186,6 +188,13 @@ instance FromJSON TagInsert where
     <*> pure ()
     <*> pure ()
 
+
+validTagInsertObject :: Value
+validTagInsertObject = object
+  [ "name" .= ("The name you want to give to this tag you are creating" :: Text)
+  , "genre" .= ("One of " ++ show allGenres)
+  ]
+
 instance FromJSON TagPut where
   parseJSON = withObject "tag" $ \o -> Tag
     <$> o .: "id"
@@ -193,6 +202,15 @@ instance FromJSON TagPut where
     <*> o .: "genre"
     <*> pure ()
     <*> pure ()
+
+
+validTagPutObject :: Value
+validTagPutObject = object
+  [ "id" .= ("The id of the tag which should be in the DB" :: Text)
+  , "name" .= ("The name you want to give to the tag with the above id" :: Text)
+  , "genre" .= ("One of " ++ show allGenres)
+  ]
+
 
 -- JSON API
 

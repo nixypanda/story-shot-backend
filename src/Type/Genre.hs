@@ -6,6 +6,7 @@
 
 module Type.Genre
   ( Genre(..)
+  , allGenres
   ) where
 
 import GHC.Generics (Generic)
@@ -34,8 +35,11 @@ import Opaleye
 data Genre
   = Fiction
   | NonFiction
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generic, Enum, Bounded)
 
+
+allGenres :: [Genre]
+allGenres = [minBound..]
 
 instance ToJSON Genre
 
