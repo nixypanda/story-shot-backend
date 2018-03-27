@@ -17,7 +17,7 @@ module Resource.Author
 import Data.Int (Int64)
 import GHC.Generics (Generic)
 
-import Data.Aeson (ToJSON, FromJSON)
+import Data.Aeson (ToJSON(..))
 import Network.JSONApi
   ( Document
   , ErrorDocument(..)
@@ -33,6 +33,7 @@ import Network.JSONApi
 
 import Utils (toURL)
 import Init (WithConfig)
+import Type.Pagination
 import Type.Author
 import Storage.Author
 import Exception.AppError (APIError, ClientError(..), toErrorDoc)
@@ -53,9 +54,9 @@ createAuthorResources =
 
 -- RETRIVE
 
-getAuthorResources :: WithConfig (Document Author)
-getAuthorResources =
-  docMulti <$> getAuthors
+getAuthorResources :: CursorParam -> WithConfig (Document Author)
+getAuthorResources cur =
+  docMulti <$> getAuthors cur
 
 
 getAuthorResource :: Int -> WithConfig (Either (ErrorDocument Author) (Document Author))
@@ -91,15 +92,17 @@ deleteAuthorResources = fmap (docMeta . fromIntegral) . deleteAuthors
 
 -- JSON API Related
 
-data AuthorMetaData = AuthorMetaData
-  { count :: Int
-  } deriving (Eq, Show, Generic)
+data AuthorMetaData = CursorInfo Cursor | CountInfo Int
+  deriving (Eq, Show, Generic)
 
 instance MetaObject AuthorMetaData where
-  typeName _ = "authorCount"
+  typeName (CursorInfo _) = "cursor"
+  typeName (CountInfo _) = "count"
 
-instance ToJSON AuthorMetaData
-instance FromJSON AuthorMetaData
+
+instance ToJSON AuthorMetaData where
+  toJSON (CursorInfo cur) = toJSON cur
+  toJSON (CountInfo count) = toJSON count
 
 -- Builds the Links data for the 'index' action
 indexLinks :: Links
@@ -110,9 +113,10 @@ indexLinks = mkLinks [("self", selfLink)]
 
 -- Builds the Meta data for the 'index' action
 indexMetaData :: [Author] -> Meta
-indexMetaData authors = mkMeta AuthorMetaData
-  { count = length authors
-  }
+indexMetaData authors = mkMeta (CursorInfo Cursor
+  { next = if null authors then 0 else maximum (fmap authorID authors)
+  , size = length authors
+  })
 
 
 -- Builds the repsonse Document for the 'index' action
@@ -133,12 +137,12 @@ docMulti authors =
 
 docMetaOrError :: Int64 -> Either (ErrorDocument Author) (Document Author)
 docMetaOrError 0 = Left $ docError ResourceNotFound
-docMetaOrError 1 = Right $ indexDocument [] indexLinks $ mkMeta $ AuthorMetaData 1
+docMetaOrError 1 = Right $ indexDocument [] indexLinks $ mkMeta $ CountInfo 1
 docMetaOrError _ = error "Impossible"
 
 
 docMeta :: Int -> Document Author
-docMeta = indexDocument [] indexLinks . mkMeta . AuthorMetaData
+docMeta = indexDocument [] indexLinks . mkMeta . CountInfo
 
 
 docError :: APIError e => e -> ErrorDocument a

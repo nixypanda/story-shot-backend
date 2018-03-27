@@ -199,12 +199,12 @@ validAuthorPutObject = object
 authorIdentifier :: Author -> Identifier
 authorIdentifier author = Identifier
   (pack . show . authorID $ author)
-  "Author"
+  "author"
   (resourceMetaData author)
 
 instance ResourcefulEntity Author where
   resourceIdentifier = pack . show . authorID
-  resourceType _ = "Author"
+  resourceType _ = "author"
   resourceLinks = Just . authorLinks
   resourceMetaData _ = Nothing
   resourceRelationships _ = Nothing

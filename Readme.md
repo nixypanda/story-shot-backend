@@ -18,8 +18,8 @@ machine):
 - [x] Tag: CRUD
 - [x] Story: CRUD
 - [x] JSON-API response
-- [ ] Detailed response on invalid data
-- [ ] Error/Exception Handling
+- [x] Detailed response on invalid data
+- [x] Error/Exception Handling
 - [ ] Transaction Blocks
-- [ ] DB Connection Pooling
-- [ ] Pagination
+- [x] DB Connection Pooling
+- [x] Pagination

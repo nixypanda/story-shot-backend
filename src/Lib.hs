@@ -38,13 +38,14 @@ application c = do
   get "/" indexRoute
   get "/health" health
 
-  post   "/story"     SC.post
-  get    "/story"     SC.getBatch
-  get    "/story/:id" SC.get
-  put    "/story"     SC.putBatch
-  put    "/story/:id" SC.put
-  delete "/story"     SC.deleteBatch
-  delete "/story/:id" SC.delete
+  post   "/story"        SC.post
+  get    "/story"        SC.getBatch
+  get    "/story/:id"    SC.get
+  get    "/story/random" SC.getRandom
+  put    "/story"        SC.putBatch
+  put    "/story/:id"    SC.put
+  delete "/story"        SC.deleteBatch
+  delete "/story/:id"    SC.delete
 
   post   "/tag"     TC.post
   get    "/tag"     TC.getBatch

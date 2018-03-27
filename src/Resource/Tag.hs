@@ -17,11 +17,10 @@ module Resource.Tag
 import Data.Int (Int64)
 import GHC.Generics (Generic)
 
-import Data.Aeson (ToJSON, FromJSON)
+import Data.Aeson (ToJSON(..))
 import Network.JSONApi
   ( Document
   , ErrorDocument(..)
-  , Error
   , MetaObject(..)
   , Links
   , Meta
@@ -33,6 +32,7 @@ import Network.JSONApi
   )
 
 import Storage.Tag
+import Type.Pagination
 import Type.Tag
 import Utils (toURL)
 import Init (WithConfig)
@@ -54,9 +54,9 @@ createTagResources =
 
 -- RETRIVE
 
-getTagResources :: WithConfig (Document Tag)
-getTagResources =
-  docMulti <$> getTags
+getTagResources :: CursorParam -> WithConfig (Document Tag)
+getTagResources cp =
+  docMulti <$> getTags cp
 
 
 getTagResource :: Int -> WithConfig (Either (ErrorDocument Tag) (Document Tag))
@@ -87,22 +87,26 @@ deleteTagResource =
 
 deleteTagResources :: [Int] -> WithConfig (Document Tag)
 deleteTagResources =
-    fmap (docMeta . fromIntegral) . deleteTags
+  fmap (docMeta . fromIntegral) . deleteTags
 
 
 -- HELPERS
 
 -- JSON API Related
 
-data TagMetaData = TagMetaData
-  { count :: Int
-  } deriving (Eq, Show, Generic)
+data TagMetaData = CursorInfo Cursor | CountInfo Int
+  deriving (Eq, Show, Generic)
 
 instance MetaObject TagMetaData where
-  typeName _ = "tagCount"
+  typeName (CursorInfo _) = "cursor"
+  typeName (CountInfo _) = "count"
 
-instance ToJSON TagMetaData
-instance FromJSON TagMetaData
+
+instance ToJSON TagMetaData where
+  toJSON (CursorInfo cur) = toJSON cur
+  toJSON (CountInfo count) = toJSON count
+
+
 
 -- Builds the Links data for the 'index' action
 indexLinks :: Links
@@ -112,8 +116,11 @@ indexLinks = mkLinks [("self", selfLink)]
 
 
 -- Builds the Meta data for the 'index' action
-indexMetaData :: [a] -> Meta
-indexMetaData tags = mkMeta (TagMetaData $ length tags)
+indexMetaData :: [Tag] -> Meta
+indexMetaData tags = mkMeta (CursorInfo Cursor
+  { next = if null tags then 0 else maximum (fmap tagID tags)
+  , size = length tags
+  })
 
 
 -- Builds the repsonse Document for the 'index' action
@@ -134,13 +141,13 @@ docMulti tags =
 
 docMetaOrError :: Int64 -> Either (ErrorDocument Tag) (Document Tag)
 docMetaOrError 0 = Left $ docError ResourceNotFound
-docMetaOrError 1 = Right $ indexDocument [] indexLinks $ mkMeta $ TagMetaData 1
+docMetaOrError 1 = Right $ indexDocument [] indexLinks $ mkMeta $ CountInfo 1
 docMetaOrError _ = error "Impossible"
 
 
 docMeta :: Int -> Document Tag
 docMeta =
-  indexDocument [] indexLinks . mkMeta . TagMetaData
+  indexDocument [] indexLinks . mkMeta . CountInfo
 
 
 docError :: APIError e => e -> ErrorDocument a

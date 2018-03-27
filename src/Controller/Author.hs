@@ -21,12 +21,14 @@ import Web.Scotty.Trans
   , jsonData
   , rescue
   , param
+  , params
   )
 
 import Type.Author
 import Resource.Author
 import Init (ActionA)
 import Controller.Basic (invalidPayload)
+import Controller.Utils (cursorPagination)
 
 
 -- CREATE
@@ -49,7 +51,8 @@ postBatch = do
 
 getBatch :: ActionA
 getBatch = do
-  ar <- lift getAuthorResources
+  qparams <- params
+  ar <- lift . getAuthorResources $ cursorPagination qparams
   json ar
 
 

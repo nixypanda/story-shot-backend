@@ -14,18 +14,19 @@ module Controller.Tag
   ) where
 
 import Control.Monad.Trans (lift)
-
 import Web.Scotty.Trans
   ( json
   , jsonData
   , rescue
   , param
+  , params
   )
 
 import Type.Tag
 import Resource.Tag
 import Init (ActionA)
 import Controller.Basic (invalidPayload)
+import Controller.Utils (cursorPagination)
 
 
 -- CREATE
@@ -47,7 +48,8 @@ postBatch = do
 
 getBatch :: ActionA
 getBatch = do
-  ar <- lift getTagResources
+  qparams <- params
+  ar <- lift . getTagResources $ cursorPagination qparams
   json ar
 
 

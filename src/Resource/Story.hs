@@ -6,6 +6,7 @@
 module Resource.Story
   ( getStoryResources
   , getStoryResource
+  , getRandomStoryResource
   , createStoryResources
   , createStoryResource
   , updateStoryResources
@@ -17,7 +18,7 @@ module Resource.Story
 import Data.Int (Int64)
 import GHC.Generics (Generic)
 
-import Data.Aeson (ToJSON, FromJSON)
+import Data.Aeson (ToJSON(toJSON))
 import Network.JSONApi
   ( Document
   , ErrorDocument(..)
@@ -33,6 +34,7 @@ import Network.JSONApi
 
 import Storage.Story
 import Type.Story
+import Type.Pagination
 import Utils (toURL)
 import Init (WithConfig)
 import Exception.AppError (APIError, ClientError(..), toErrorDoc)
@@ -53,15 +55,19 @@ createStoryResources =
 
 -- RETRIVE
 
-getStoryResources :: WithConfig (Document Story)
-getStoryResources =
-  docMulti <$> getStories
+getStoryResources :: CursorParam -> WithConfig (Document Story)
+getStoryResources cur =
+  docMulti <$> getStories cur
 
 
 getStoryResource :: Int -> WithConfig (Either (ErrorDocument Story) (Document Story))
 getStoryResource =
   fmap docOrError . getStory
 
+
+getRandomStoryResource :: WithConfig (Either (ErrorDocument Story) (Document Story))
+getRandomStoryResource =
+  fmap docOrError getRandomStory
 
 
 -- UPDATE
@@ -94,15 +100,17 @@ deleteStoryResources =
 
 -- JSON API Related
 
-data StoryMetaData = StoryMetaData
-  { count :: Int
-  } deriving (Eq, Show, Generic)
+data StoryMetaData = CursorInfo Cursor | CountInfo Int
+  deriving (Eq, Show, Generic)
 
 instance MetaObject StoryMetaData where
-  typeName _ = "storyCount"
+  typeName (CursorInfo _) = "cursor"
+  typeName (CountInfo _) = "count"
 
-instance ToJSON StoryMetaData
-instance FromJSON StoryMetaData
+
+instance ToJSON StoryMetaData where
+  toJSON (CursorInfo cur) = toJSON cur
+  toJSON (CountInfo count) = toJSON count
 
 -- Builds the Links data for the 'index' action
 indexLinks :: Links
@@ -112,8 +120,11 @@ indexLinks = mkLinks [("self", selfLink)]
 
 
 -- Builds the Meta data for the 'index' action
-indexMetaData :: [a] -> Meta
-indexMetaData stories = mkMeta (StoryMetaData $ length stories)
+indexMetaData :: [Story] -> Meta
+indexMetaData stories = mkMeta (CursorInfo Cursor
+  { next = if null stories then 0 else maximum (fmap storyID stories)
+  , size = length stories
+  })
 
 
 -- Builds the repsonse Document for the 'index' action
@@ -134,13 +145,13 @@ docMulti stories =
 
 docMetaOrError :: Int64 -> Either (ErrorDocument Story) (Document Story)
 docMetaOrError 0 = Left $ docError ResourceNotFound
-docMetaOrError 1 = Right $ indexDocument [] indexLinks $ mkMeta $ StoryMetaData 1
+docMetaOrError 1 = Right $ indexDocument [] indexLinks $ mkMeta $ CountInfo 1
 docMetaOrError _ = error "Impossible"
 
 
 docMeta :: Int -> Document Story
 docMeta =
-  indexDocument [] indexLinks . mkMeta . StoryMetaData
+  indexDocument [] indexLinks . mkMeta . CountInfo
 
 
 docError :: APIError e => e -> ErrorDocument a

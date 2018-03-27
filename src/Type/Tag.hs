@@ -217,12 +217,12 @@ validTagPutObject = object
 tagIdentifier :: Tag -> Identifier
 tagIdentifier tag = Identifier
   (pack . show . tagID $ tag)
-  "Tag"
+  "tag"
   (resourceMetaData tag)
 
 instance ResourcefulEntity Tag where
   resourceIdentifier = pack . show . tagID
-  resourceType _ = "Tag"
+  resourceType _ = "tag"
   resourceLinks = Just . tagLinks
   resourceMetaData _ = Nothing
   resourceRelationships _ = Nothing

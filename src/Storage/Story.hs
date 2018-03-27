@@ -2,6 +2,7 @@
 {-# LANGUAGE Arrows #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Storage.Story
@@ -27,17 +28,22 @@ import Opaleye
   , QueryArr
   , Column
   , PGInt4
-  , (.==)
+  , asc
   , in_
   , constant
+  , limit
+  , orderBy
   , restrict
   , queryTable
+  , (.==)
+  , (.>)
   )
 
 import Type.Story
 import Type.Author
 import Type.StoryTag
 import Type.Tag
+import Type.Pagination
 import Storage.Utils
 import Storage.Author
 import Storage.Tag
@@ -65,16 +71,16 @@ createStory =
 
 -- RETRIVE
 
-getRandomStory :: WithConfig Story
-getRandomStory = runDB randomStory >>= fmap head . _fromPGStories
+getRandomStory :: WithConfig (Maybe Story)
+getRandomStory = runDB randomStory >>= fmap listToMaybe . _fromPGStories
 
 
 getStory :: Int -> WithConfig (Maybe Story)
 getStory id' = runDB (singleStory id') >>= fmap listToMaybe . _fromPGStories
 
 
-getStories :: WithConfig [Story]
-getStories = runDB storyQuery >>= _fromPGStories
+getStories :: CursorParam -> WithConfig [Story]
+getStories cur = runDB (cursorPaginatedStoryQuery cur) >>= _fromPGStories
 
 
 
@@ -149,13 +155,22 @@ storyQuery :: Query StoryRead
 storyQuery = queryTable storyTable
 
 
+cursorPaginatedStoryQuery :: CursorParam -> Query StoryRead
+cursorPaginatedStoryQuery CursorParam{..} = limit sizeCursor $ proc () -> do
+  row <- storyQuery -< ()
+  restrict -< Type.Story.storyColID row .> constant nextCursor
+
+  returnA -< row
+
+
 storyTagsQuery :: Query StoryTagRead
 storyTagsQuery = queryTable storyTagTable
 
 
 -- TODO: How would you do it?
+-- HACK: Not Random at the moment
 randomStory :: Query StoryRead
-randomStory = undefined
+randomStory = limit 1 . orderBy (asc Type.Story.storyColID) $ storyQuery
 
 
 singleStory :: Int -> Query StoryRead

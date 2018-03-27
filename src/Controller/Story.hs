@@ -7,6 +7,7 @@ module Controller.Story
   , postBatch
   , getBatch
   , get
+  , getRandom
   , putBatch
   , put
   , deleteBatch
@@ -20,12 +21,14 @@ import Web.Scotty.Trans
   , jsonData
   , rescue
   , param
+  , params
   )
 
 import Type.Story
 import Resource.Story
 import Init (ActionA)
 import Controller.Basic (invalidPayload)
+import Controller.Utils (cursorPagination)
 
 
 -- CREATE
@@ -35,6 +38,7 @@ post = do
   story' :: StoryInsert <- jsonData `rescue` invalidPayload validStoryInsertObject
   storyResource <- lift $ createStoryResource story'
   json storyResource
+
 
 postBatch :: ActionA
 postBatch = do
@@ -47,7 +51,8 @@ postBatch = do
 
 getBatch :: ActionA
 getBatch = do
-  ar <- lift getStoryResources
+  qparams <- params
+  ar <- lift . getStoryResources $ cursorPagination qparams
   json ar
 
 
@@ -57,6 +62,11 @@ get = do
   storyResource <- lift $ getStoryResource storyId'
   either json json storyResource
 
+
+getRandom :: ActionA
+getRandom = do
+  storyResource <- lift getRandomStoryResource
+  either json json storyResource
 
 
 -- UPDATE

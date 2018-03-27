@@ -307,7 +307,7 @@ validStoryPutObject = object
 
 instance ResourcefulEntity Story where
   resourceIdentifier = pack . show . storyID
-  resourceType _ = "Story"
+  resourceType _ = "story"
   resourceLinks = Just . storyLinks
   resourceMetaData _ = Nothing
   resourceRelationships = storyRelations
@@ -317,6 +317,7 @@ storyLinks story = mkLinks [("self", selfLink)]
   where
     selfLink = toURL selfPath
     selfPath = "/story/" <> show (storyID story)
+
 
 storyRelations :: Story -> Maybe Relationships
 storyRelations story =

@@ -26,6 +26,7 @@ library
                      , Type.Tag
                      , Type.Author
                      , Type.StoryTag
+                     , Type.Pagination
 
                      , Storage.Utils
                      , Storage.Tag
@@ -40,6 +41,7 @@ library
                      , Controller.Tag
                      , Controller.Story
                      , Controller.Author
+                     , Controller.Utils
 
                      , Utils
   build-depends:       base >= 4.7 && < 5
@@ -55,6 +57,7 @@ library
                      -- The EitherT monad Transformer
                      , either
                      , http-types
+                     , MissingH
                      , postgresql-simple
                      , resource-pool
                      , scotty

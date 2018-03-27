@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE Arrows #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -24,11 +25,14 @@ import Data.Maybe (listToMaybe, catMaybes)
 import Opaleye
   ( Query
   , (.==)
+  , (.>)
   , constant
-  , restrict
+  , limit
   , queryTable
+  , restrict
   )
 
+import Type.Pagination
 import Type.Author
 import Init (WithConfig)
 import Storage.Utils
@@ -57,6 +61,15 @@ createAuthors authors =
 authorQuery :: Query AuthorRead
 authorQuery = queryTable authorTable
 
+
+cursorPaginatedAuthorQuery :: CursorParam -> Query AuthorRead
+cursorPaginatedAuthorQuery CursorParam{..} = limit sizeCursor $ proc () -> do
+  row <- authorQuery -< ()
+  restrict -< authorColID row .> constant nextCursor
+
+  returnA -< row
+
+
 singleAuthor :: Int -> Query AuthorRead
 singleAuthor idA = proc () -> do
   row <- authorQuery -< ()
@@ -65,8 +78,8 @@ singleAuthor idA = proc () -> do
   returnA -< row
 
 
-getAuthors :: WithConfig [Author]
-getAuthors = runDB authorQuery
+getAuthors :: CursorParam -> WithConfig [Author]
+getAuthors = runDB . cursorPaginatedAuthorQuery
 
 
 getAuthor :: Int -> WithConfig (Maybe Author)

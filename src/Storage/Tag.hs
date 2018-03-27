@@ -2,6 +2,7 @@
 {-# LANGUAGE Arrows #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Storage.Tag
   ( getTags
@@ -22,12 +23,15 @@ import Data.Maybe (listToMaybe, catMaybes)
 import Opaleye
   ( Query
   , (.==)
+  , (.>)
   , constant
   , restrict
   , queryTable
+  , limit
   )
 
 import Type.Tag
+import Type.Pagination
 import Init (WithConfig)
 import Storage.Utils
   ( runDB
@@ -56,6 +60,15 @@ createTags tags =
 tagQuery :: Query TagRead
 tagQuery = queryTable tagTable
 
+
+cursorPaginatedTagQuery :: CursorParam -> Query TagRead
+cursorPaginatedTagQuery CursorParam{..} = limit sizeCursor $ proc () -> do
+  row <- tagQuery -< ()
+  restrict -< tagColID row .> constant nextCursor
+
+  returnA -< row
+
+
 singleTag :: Int -> Query TagRead
 singleTag idA = proc () -> do
   row <- tagQuery -< ()
@@ -64,8 +77,8 @@ singleTag idA = proc () -> do
   returnA -< row
 
 
-getTags :: WithConfig [Tag]
-getTags = runDB tagQuery
+getTags :: CursorParam -> WithConfig [Tag]
+getTags = runDB . cursorPaginatedTagQuery
 
 
 getTag :: Int -> WithConfig (Maybe Tag)
