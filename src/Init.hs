@@ -21,8 +21,9 @@ module Init
 import Control.Monad.Reader (ReaderT)
 
 import Data.Default (def)
+import Data.Pool (Pool, createPool)
 import Data.Text.Lazy (Text)
-import Database.PostgreSQL.Simple (Connection, connect)
+import Database.PostgreSQL.Simple (Connection, connect, close)
 import Network.Wai.Handler.Warp
   ( Settings
   , defaultSettings
@@ -51,7 +52,7 @@ type Error = Text
 -- Setup
 
 data Config = Config
-  { connection :: Connection
+  { connPool :: Pool Connection
   , port :: Int
   , environment :: Environment
   }
@@ -62,9 +63,9 @@ data Config = Config
 getConfig :: IO Config
 getConfig = do
   env <- readEnv
-  conn <- connect $ dbConfig env
+  pgPool <- createPool (connect $ dbConfig env) close 1 10 10
   return Config
-    { connection = conn
+    { connPool = pgPool
     , port = appPort env
     , environment = environ env
     }
