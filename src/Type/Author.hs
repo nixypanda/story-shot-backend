@@ -13,7 +13,9 @@ module Type.Author
   , AuthorPut
   , AuthorWrite
   , AuthorRead
+  , AuthorS
   , authorTable
+  , mkAuthorS
   , mkAuthorPut
   , mkAuthorWrite
   , mkAuthorWrite'
@@ -21,8 +23,6 @@ module Type.Author
   , authorColID
   , authorName
   , authorColName
-  , authorLinks
-  , authorIdentifier
   , validAuthorPutObject
   , validAuthorInsertObject
   ) where
@@ -41,12 +41,6 @@ import Data.Aeson
   , withObject
   , (.=)
   , (.:)
-  )
-import Network.JSONApi
-  ( Links
-  , ResourcefulEntity (..)
-  , Identifier(..)
-  , mkLinks
   )
 import Opaleye
   ( Column
@@ -76,6 +70,7 @@ data Author' authorID authorName createdAt updatedAt =
 
 -- Types that Will be used
 type Author = Author' Int Text UTCTime UTCTime
+type AuthorS = Author' Int () () ()
 type AuthorPut = Author' Int Text () ()
 type AuthorInsert = Author' () Text () ()
 type AuthorWrite = Author'
@@ -136,6 +131,14 @@ mkAuthorWrite' Author{..} = Author
   , _updatedAt = Nothing
   }
 
+mkAuthorS :: Int -> AuthorS
+mkAuthorS aid = Author
+  { _authorID = aid
+  , _authorName = ()
+  , _createdAt = ()
+  , _updatedAt = ()
+  }
+
 authorID :: Author' Int b c d -> Int
 authorID = _authorID
 
@@ -157,7 +160,24 @@ instance ToJSON Author where
     , "name" .= _authorName
     , "created-at" .= _createdAt
     , "updated-at" .= _updatedAt
+    , "type" .= ("author" :: Text)
+    , "link" .= ((pack $ "/author/" <> show _authorID) :: Text)
     ]
+
+instance ToJSON AuthorS where
+  toJSON Author{..} = object
+    [ "id" .= _authorID
+    , "type" .= ("author" :: Text)
+    , "link" .= ((pack $ "/author/" <> show _authorID) :: Text)
+    ]
+
+instance FromJSON AuthorS where
+  parseJSON = withObject "author" $ \o -> Author
+    <$> o .: "id"
+    <*> pure ()
+    <*> pure ()
+    <*> pure ()
+
 
 instance FromJSON Author where
   parseJSON = withObject "author" $ \o -> Author
@@ -192,25 +212,3 @@ validAuthorPutObject = object
   [ "id" .= ("The id of the author which should be in the DB" :: Text)
   , "name" .= ("The name you want to give to the author with the above id" :: Text)
   ]
-
-
--- JSON API
-
-authorIdentifier :: Author -> Identifier
-authorIdentifier author = Identifier
-  (pack . show . authorID $ author)
-  "author"
-  (resourceMetaData author)
-
-instance ResourcefulEntity Author where
-  resourceIdentifier = pack . show . authorID
-  resourceType _ = "author"
-  resourceLinks = Just . authorLinks
-  resourceMetaData _ = Nothing
-  resourceRelationships _ = Nothing
-
-authorLinks :: Author -> Links
-authorLinks author = mkLinks [("self", selfLink)]
-  where
-    selfLink = toURL selfPath
-    selfPath = "/author/" <> show (authorID author)

@@ -17,7 +17,8 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lib
                      , Class.Versioned
-                     , Exception.AppError
+                     , Class.Includes
+
                      , Init
                      , Environment
                      , Type.Duration
@@ -27,6 +28,9 @@ library
                      , Type.Author
                      , Type.StoryTag
                      , Type.Pagination
+                     , Type.Doc
+                     , Type.AppError
+                     , Type.Or
 
                      , Storage.Utils
                      , Storage.Tag
@@ -47,6 +51,7 @@ library
   build-depends:       base >= 4.7 && < 5
                      -- json parsing library
                      , aeson
+                     , unordered-containers
                      , containers
                      , json-api
                      , product-profunctors
@@ -61,6 +66,7 @@ library
                      , postgresql-simple
                      , resource-pool
                      , scotty
+                     , split
                      -- type level web dsl
                      , transformers
                      , text

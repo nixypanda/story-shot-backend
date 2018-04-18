@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Type.Story
   ( Story
@@ -14,14 +15,15 @@ module Type.Story
   , StoryPut
   , StoryWrite
   , StoryRead
+  , StoryIncludes(..)
   , pgStoryID
+  , storyAuthorID
   , storyTable
   , mkStoryWrite
   , mkStoryWrite'
   , mkStoryFromDB
   , storyID
   , storyColID
-  , storyLinks
   , tagIDs
   , Type.Story.authorColID
   , validStoryPutObject
@@ -31,9 +33,10 @@ module Type.Story
 import Data.Monoid ((<>))
 import Data.Time (UTCTime)
 import GHC.Generics (Generic)
+import Data.Either (partitionEithers)
 
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import Data.Text (Text, length, pack)
+import Data.Text (Text, length, pack, splitOn)
 import Data.Aeson
   ( ToJSON(..)
   , FromJSON(..)
@@ -42,14 +45,6 @@ import Data.Aeson
   , withObject
   , (.=)
   , (.:)
-  )
-import Network.JSONApi
-  ( Links
-  , ResourcefulEntity (..)
-  , Relationships
-  , mkLinks
-  , mkRelationship
-  , mkRelationships
   )
 import Opaleye
   ( Column
@@ -62,12 +57,15 @@ import Opaleye
   , constant
   )
 
+import Type.Or
 import Type.Duration
 import Type.Genre
 import Type.Tag
 import Type.Author
-import Utils (toURL)
+import Type.AppError
 import Class.Versioned
+import Class.Includes
+import Utils (toURL)
 
 
 data Story' storyID title duration author timesRead stars genre tags story createdAt updatedAt = Story
@@ -97,9 +95,10 @@ data PGStory' storyID title duration author timesRead stars genre story createdA
   , _pgUpdatedAt :: updatedAt
   } deriving (Eq, Show, Generic)
 
-type Story       = Story' Int Text         Duration Author      Int         Int         Genre         [Tag]         Text         UTCTime UTCTime
-type StoryPut    = Story' Int (Maybe Text) ()       (Maybe Int) (Maybe Int) (Maybe Int) (Maybe Genre) (Maybe [Int]) (Maybe Text) ()      ()
-type StoryInsert = Story' ()  Text         ()       Int         ()          ()          Genre         [Int]         Text         ()      ()
+type Story       = Story' Int Text         Duration (Or AuthorS Author) Int         Int         Genre         (Or [TagS] [Tag]) Text         UTCTime UTCTime
+type StoryS      = Story' Int ()           ()       ()                  ()          ()          ()            ()                ()           ()      ()
+type StoryPut    = Story' Int (Maybe Text) ()       (Maybe Int)         (Maybe Int) (Maybe Int) (Maybe Genre) (Maybe [Int])     (Maybe Text) ()      ()
+type StoryInsert = Story' ()  Text         ()       Int                 ()          ()          Genre         [Int]             Text         ()      ()
 
 type PGStory   = PGStory' Int Text Duration Int Int Int Genre Text UTCTime UTCTime
 type StoryRead = PGStory'
@@ -125,6 +124,7 @@ type StoryWrite = PGStory'
   (Column PGText)
   (Maybe (Column PGTimestamptz))
   (Maybe (Column PGTimestamptz))
+
 
 
 instance Versioned Story where
@@ -159,7 +159,7 @@ durationFromStoryLen s
   | Data.Text.length s < 5000 = Medium
   | otherwise = Long
 
-mkStoryFromDB :: PGStory -> Author -> [Tag] -> Story
+mkStoryFromDB :: PGStory -> Or AuthorS Author -> Or [TagS] [Tag] -> Story
 mkStoryFromDB PGStory{..} author' tags' = Story
   { _storyID = _pgStoryID
   , _title = _pgTitle
@@ -217,11 +217,8 @@ storyColID = _pgStoryID
 authorColID :: PGStory' a b c (Column PGInt4) e f g h i j -> Column PGInt4
 authorColID = _pgAuthor
 
-author :: Story -> Author
-author = _author
-
-tags :: Story -> [Tag]
-tags = _tags
+storyAuthorID :: PGStory -> Int
+storyAuthorID = _pgAuthor
 
 -- JSON
 
@@ -230,27 +227,24 @@ instance ToJSON Story where
     [ "id" .= _storyID
     , "title" .= _title
     , "duration" .= _duration
+    , "author" .= _author
+    , "tags" .= _tags
     , "read-count" .= _timesRead
     , "stars" .= _stars
     , "genre" .= _genre
     , "story" .= _story
     , "created-at" .= _createdAt
     , "updated-at" .= _updatedAt
+    , "type" .= ("story" :: Text)
+    , "link" .= ((pack $ "/story/" <> show _storyID) :: Text)
     ]
 
-instance FromJSON Story where
-  parseJSON = withObject "story" $ \o -> Story
-      <$> o .: "id"
-      <*> o .: "title"
-      <*> o .: "duration"
-      <*> o .: "author"
-      <*> o .: "read-count"
-      <*> o .: "stars"
-      <*> o .: "genre"
-      <*> o .: "tags"
-      <*> o .: "story"
-      <*> o .: "created-at"
-      <*> o .: "updated-at"
+instance ToJSON StoryS where
+  toJSON Story{..} = object
+    [ "id" .= _storyID
+    , "type" .= ("story" :: Text)
+    , "link" .= ((pack $ "/story/" <> show _storyID) :: Text)
+    ]
 
 instance FromJSON StoryInsert where
   parseJSON = withObject "story" $ \o -> Story
@@ -303,31 +297,29 @@ validStoryPutObject = object
   , "story" .= ("The new/old value for the story" :: Text)
   ]
 
--- JSON API
-
-instance ResourcefulEntity Story where
-  resourceIdentifier = pack . show . storyID
-  resourceType _ = "story"
-  resourceLinks = Just . storyLinks
-  resourceMetaData _ = Nothing
-  resourceRelationships = storyRelations
-
-storyLinks :: Story -> Links
-storyLinks story = mkLinks [("self", selfLink)]
-  where
-    selfLink = toURL selfPath
-    selfPath = "/story/" <> show (storyID story)
 
 
-storyRelations :: Story -> Maybe Relationships
-storyRelations story =
-  let
-    author' = author story
-    tags' = tags story
-    authorRelation = mkRelationship (Just $ authorIdentifier author') (Just $ authorLinks author')
-    authorRelationships = fmap mkRelationships authorRelation
-    tagRelations = mapM (\t -> mkRelationship (Just $ tagIdentifier t) (Just $ tagLinks t) ) tags'
-    tagRelationships = fmap (fmap mkRelationships) tagRelations
-    allRelationships = (:) <$> authorRelationships <*> tagRelationships
-  in
-    fmap (foldr1 (<>)) allRelationships
+data StoryIncludes
+  = IAuthor
+  | ITags
+  deriving (Show, Eq)
+
+
+instance Includes StoryIncludes where
+  getAll = [IAuthor, ITags]
+
+  fromCSV :: Text -> Either ClientError [StoryIncludes]
+  fromCSV =
+    let
+      fromString :: Text -> Either ClientError StoryIncludes
+      fromString "author" = Right IAuthor
+      fromString "tag" = Right ITags
+      fromString a = Left InvalidQueryParams
+
+      f :: ([ClientError], [StoryIncludes]) -> Either ClientError [StoryIncludes]
+      f (x:xs, _) = Left x
+      f (_, ys) = Right ys
+   in
+      f . partitionEithers . map fromString . splitOn ","
+
+

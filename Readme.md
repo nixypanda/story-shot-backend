@@ -17,9 +17,11 @@ machine):
 - [x] Author: CRUD
 - [x] Tag: CRUD
 - [x] Story: CRUD
-- [x] JSON-API response
+~- [x] JSON-API response~
+- [x] Simplified JSON-API response
 - [x] Detailed response on invalid data
 - [x] Error/Exception Handling
 - [ ] Transaction Blocks
 - [x] DB Connection Pooling
 - [x] Pagination
+- [ ] Abstract Metadata info for all resources

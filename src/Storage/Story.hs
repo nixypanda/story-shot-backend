@@ -10,6 +10,10 @@ module Storage.Story
   , createStory
   , getStories
   , getStory
+  , getTagsForStory
+  , getTagIDsForStory
+  , getTagsForStories
+  , getTagIDsForStories
   , getRandomStory
   , updateStories
   , updateStory
@@ -20,7 +24,7 @@ module Storage.Story
 
 import Data.Int (Int64)
 import Control.Arrow (returnA)
-import Data.Map (fromList, fromListWith, lookup, (!))
+import Data.Map (Map, fromList, fromListWith, lookup, (!))
 import Data.Maybe (fromJust, fromMaybe, listToMaybe)
 
 import Opaleye
@@ -53,17 +57,17 @@ import Init (WithConfig)
 
 -- CREATE
 
-createStories :: [StoryInsert] -> WithConfig [Story]
+createStories :: [StoryInsert] -> WithConfig [PGStory]
 createStories stories = do
   stories' <- runDBInsertR storyTable (map mkStoryWrite stories) id
   let
     storyTags = concat $ zipWith (\sr si -> map (mkStoryTag $ pgStoryID sr) (tagIDs si)) stories' stories
 
   _ <- runDBInsert storyTagTable storyTags
-  _fromPGStories stories'
+  return stories'
 
 
-createStory :: StoryInsert -> WithConfig Story
+createStory :: StoryInsert -> WithConfig PGStory
 createStory =
   fmap head . createStories . return
 
@@ -71,16 +75,29 @@ createStory =
 
 -- RETRIVE
 
-getRandomStory :: WithConfig (Maybe Story)
-getRandomStory = runDB randomStory >>= fmap listToMaybe . _fromPGStories
+getRandomStory :: WithConfig (Maybe PGStory)
+getRandomStory = listToMaybe <$> runDB randomStory
 
+getStory :: Int -> WithConfig (Maybe PGStory)
+getStory = fmap listToMaybe . runDB . singleStory
 
-getStory :: Int -> WithConfig (Maybe Story)
-getStory id' = runDB (singleStory id') >>= fmap listToMaybe . _fromPGStories
+getStories :: CursorParam -> WithConfig [PGStory]
+getStories cur = runDB (cursorPaginatedStoryQuery cur)
 
+getTagIDsForStory :: Int -> WithConfig [Int]
+getTagIDsForStory sid = runDB (tagIDsForStory sid)
 
-getStories :: CursorParam -> WithConfig [Story]
-getStories cur = runDB (cursorPaginatedStoryQuery cur) >>= _fromPGStories
+getTagsForStory :: Int -> WithConfig [Tag]
+getTagsForStory sid = runDB (tagsForStory sid) 
+
+_toMap :: (Ord a) => [(a, b)] -> Map a [b]
+_toMap xs = fromListWith (++) [(k, [v]) | (k, v) <- xs]
+
+getTagIDsForStories :: [Int] -> WithConfig (Map Int [TagS])
+getTagIDsForStories sid = fmap (map mkTagS) . _toMap <$> runDB (tagIDsForStories sid)
+
+getTagsForStories :: [Int] -> WithConfig (Map Int [Tag])
+getTagsForStories sid = _toMap <$> runDB (tagsForStories sid) 
 
 
 
@@ -92,18 +109,18 @@ updateStory = fmap listToMaybe . updateStories . return
 
 -- TODO: FIX ME
 updateStories :: [StoryPut] -> WithConfig [Story]
-updateStories stories = do
-  let
-    storyIDs = map Type.Story.storyID stories
-    storyMap = fromList $ zip storyIDs stories
-
-    getID :: StoryRead -> Int
-    getID sr = read $ show $ Type.Story.storyColID sr
-
-    updateF storyRead = mkStoryWrite' (storyMap ! getID storyRead) storyRead
-    predicate storyRead = map (constant . Type.Story.storyID) stories `in_` Type.Story.storyColID storyRead
-
-  runDBUpdateR storyTable updateF predicate id >>= _fromPGStories
+updateStories stories = undefined
+  -- let
+  --   storyIDs = map Type.Story.storyID stories
+  --   storyMap = fromList $ zip storyIDs stories
+  --
+  --   getID :: StoryRead -> Int
+  --   getID sr = read $ show $ Type.Story.storyColID sr
+  --
+  --   updateF storyRead = mkStoryWrite' (storyMap ! getID storyRead) storyRead
+  --   predicate storyRead = map (constant . Type.Story.storyID) stories `in_` Type.Story.storyColID storyRead
+  --
+  -- runDBUpdateR storyTable updateF predicate id >>= _fromPGStories
 
 
 
@@ -120,33 +137,6 @@ deleteStories ids =
     storyP sic = map constant ids `in_` Type.Story.storyColID sic
   in
     runDBDelete storyTagTable storyTagP >> runDBDelete storyTable storyP
-
-
-
--- HELPERS
-
-_linkAll :: [PGStory] -> [(Int, Author)] -> [(Int, Tag)] -> [Story]
-_linkAll stories assocAuthors assocTags =
-  let
-    idTagMap = fromListWith (++) [(k, [v]) | (k, v) <- assocTags]
-    idAuthorMap = fromList assocAuthors
-    getTagsFor pgs = fromMaybe [] $ Data.Map.lookup (pgStoryID pgs) idTagMap
-    getAuthorFor pgs = fromJust $ Data.Map.lookup (pgStoryID pgs) idAuthorMap
-    getStory' sg = mkStoryFromDB sg (getAuthorFor sg) (getTagsFor sg)
- in
-    map getStory' stories
-
-
-_fromPGStories :: [PGStory] -> WithConfig [Story]
-_fromPGStories stories = do
-  let
-    storyIDs = map pgStoryID stories
-
-  storyTagMap :: [(Int, Tag)] <- runDB $ tagsForStories storyIDs
-  authors :: [(Int, Author)] <- runDB $ authorsForStories storyIDs
-
-  return $ _linkAll stories authors storyTagMap
-
 
 
 -- QUERIES
@@ -188,13 +178,32 @@ storyTagJoin = proc tag -> do
   restrict -< Type.Tag.tagColID tag .== Type.StoryTag.tagColID storyTag
   returnA -< Type.StoryTag.storyColID storyTag
 
-
 tagsForStories :: [Int] -> Query (Column PGInt4, TagRead)
 tagsForStories storyIDs = proc () -> do
   tag <- tagQuery -< ()
   sid <- storyTagJoin -< tag
   restrict -< map constant storyIDs `in_` sid
   returnA -< (sid, tag)
+
+tagIDsForStories :: [Int] -> Query (Column PGInt4, Column PGInt4)
+tagIDsForStories storyIDs = proc () -> do
+  row <- storyTagsQuery -< ()
+  restrict -< map constant storyIDs `in_` Type.StoryTag.storyColID row
+  returnA -< (Type.StoryTag.storyColID row, Type.StoryTag.tagColID row)
+
+tagIDsForStory :: Int -> Query (Column PGInt4)
+tagIDsForStory sid = proc () -> do
+  row <- storyTagsQuery -< ()
+  restrict -< Type.StoryTag.storyColID row .== constant sid
+  returnA -< Type.StoryTag.tagColID row
+
+tagsForStory :: Int -> Query TagRead
+tagsForStory sid' = proc () -> do
+  tag <- tagQuery -< ()
+  stid <- storyTagJoin -< tag
+  restrict -< constant sid' .== stid
+  returnA -< tag
+
 
 
 -- Get Authors

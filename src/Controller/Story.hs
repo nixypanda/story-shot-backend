@@ -16,6 +16,7 @@ module Controller.Story
 
 import Control.Monad.Trans (lift)
 
+import Data.List.Split (splitOn)
 import Web.Scotty.Trans
   ( json
   , jsonData
@@ -29,22 +30,27 @@ import Resource.Story
 import Init (ActionA)
 import Controller.Basic (invalidPayload)
 import Controller.Utils (cursorPagination)
+import Class.Includes
 
+
+-- Query Includes Processing
 
 -- CREATE
 
 post :: ActionA
 post = do
+  includes <- (fromCSV <$> param "includes") `rescue` (\_ -> return $ Right [])
   story' :: StoryInsert <- jsonData `rescue` invalidPayload validStoryInsertObject
-  storyResource <- lift $ createStoryResource story'
-  json storyResource
+  storyResource <- lift $ createStoryResource includes story'
+  either json json storyResource
 
 
 postBatch :: ActionA
 postBatch = do
+  includes <- (fromCSV <$> param "includes") `rescue` (\_ -> return $ Right [])
   stories :: [StoryInsert] <- jsonData `rescue` invalidPayload validStoryInsertObject
-  storyResources <- lift $ createStoryResources stories
-  json storyResources
+  storyResources <- lift $ createStoryResources includes stories
+  either json json storyResources
 
 
 -- RETRIVE
@@ -52,20 +58,23 @@ postBatch = do
 getBatch :: ActionA
 getBatch = do
   qparams <- params
-  ar <- lift . getStoryResources $ cursorPagination qparams
-  json ar
+  includes <- (fromCSV <$> param "includes") `rescue` (\_ -> return $ Right [])
+  storyResources <- lift $ getStoryResources (cursorPagination qparams) includes
+  either json json storyResources
 
 
 get :: ActionA
 get = do
   storyId' <- param "id"
-  storyResource <- lift $ getStoryResource storyId'
+  includes <- (fromCSV <$> param "includes") `rescue` (\_ -> return $ Right [])
+  storyResource <- lift $ getStoryResource storyId' includes
   either json json storyResource
 
 
 getRandom :: ActionA
 getRandom = do
-  storyResource <- lift getRandomStoryResource
+  includes <- (fromCSV <$> param "includes") `rescue` (\_ -> return $ Right [])
+  storyResource <- lift $ getRandomStoryResource includes
   either json json storyResource
 
 

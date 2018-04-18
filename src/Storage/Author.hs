@@ -8,6 +8,7 @@
 module Storage.Author
   ( getAuthors
   , getAuthor
+  , getMultiAuthors
   , authorQuery
   , createAuthor
   , createAuthors
@@ -24,8 +25,10 @@ import Data.Maybe (listToMaybe, catMaybes)
 
 import Opaleye
   ( Query
+  , QueryArr
   , (.==)
   , (.>)
+  , in_
   , constant
   , limit
   , queryTable
@@ -61,29 +64,32 @@ createAuthors authors =
 authorQuery :: Query AuthorRead
 authorQuery = queryTable authorTable
 
+multiAuthorQuery :: [Int] -> Query AuthorRead
+multiAuthorQuery aids = proc () -> do
+  row <- authorQuery -< ()
+  restrict -< map constant aids `in_` authorColID row
+  returnA -< row
 
 cursorPaginatedAuthorQuery :: CursorParam -> Query AuthorRead
 cursorPaginatedAuthorQuery CursorParam{..} = limit sizeCursor $ proc () -> do
   row <- authorQuery -< ()
   restrict -< authorColID row .> constant nextCursor
-
   returnA -< row
-
 
 singleAuthor :: Int -> Query AuthorRead
 singleAuthor idA = proc () -> do
   row <- authorQuery -< ()
   restrict -< authorColID row .== constant idA
-
   returnA -< row
-
 
 getAuthors :: CursorParam -> WithConfig [Author]
 getAuthors = runDB . cursorPaginatedAuthorQuery
 
-
 getAuthor :: Int -> WithConfig (Maybe Author)
 getAuthor = fmap listToMaybe . runDB . singleAuthor
+
+getMultiAuthors :: [Int] -> WithConfig [Author]
+getMultiAuthors = runDB . multiAuthorQuery
 
 
 

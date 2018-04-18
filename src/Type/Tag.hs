@@ -13,7 +13,9 @@ module Type.Tag
   , TagPut
   , TagWrite
   , TagRead
+  , TagS
   , tagTable
+  , mkTagS
   , mkTagPut
   , mkTagWrite
   , mkTagWrite'
@@ -22,8 +24,6 @@ module Type.Tag
   , tagName
   , tagColName
   , tagGenre
-  , tagLinks
-  , tagIdentifier
   , validTagInsertObject
   , validTagPutObject
   ) where
@@ -42,12 +42,6 @@ import Data.Aeson
   , withObject
   , (.=)
   , (.:)
-  )
-import Network.JSONApi
-  ( Links
-  , ResourcefulEntity(..)
-  , Identifier(..)
-  , mkLinks
   )
 import Opaleye
   ( Column
@@ -79,6 +73,7 @@ data Tag' id' name genre createdAt updatedAt =
 
 -- Types that Will be used
 type Tag = Tag' Int Text Genre UTCTime UTCTime
+type TagS = Tag' Int () () () ()
 type TagPut = Tag' Int Text Genre () ()
 type TagInsert = Tag' () Text Genre () ()
 type TagRead = Tag'
@@ -127,6 +122,15 @@ mkTagPut tid name genre = Tag
   , _updatedAt = ()
   }
 
+mkTagS :: Int -> TagS
+mkTagS tid = Tag
+  { _tagID = tid
+  , _tagName = ()
+  , _tagGenre = ()
+  , _createdAt = ()
+  , _updatedAt = ()
+  }
+
 mkTagWrite' :: TagInsert -> TagWrite
 mkTagWrite' Tag{..} = Tag
   { _tagID = Nothing
@@ -170,7 +174,24 @@ instance ToJSON Tag where
     , "genre" .= _tagGenre
     , "created-at" .= _createdAt
     , "updated-at" .= _updatedAt
+    , "type" .= ("tag" :: Text)
+    , "link" .= ((pack $ "/tag/" <> show _tagID) :: Text)
     ]
+
+instance ToJSON TagS where
+  toJSON Tag{..} = object
+    [ "id" .= _tagID
+    , "type" .= ("tag" :: Text)
+    , "link" .= ((pack $ "/tag/" <> show _tagID) :: Text)
+    ]
+
+instance FromJSON TagS where
+  parseJSON = withObject "tag" $ \o -> Tag
+    <$> o .: "id"
+    <*> pure ()
+    <*> pure ()
+    <*> pure ()
+    <*> pure ()
 
 instance FromJSON Tag where
   parseJSON = withObject "tag" $ \o -> Tag
@@ -210,25 +231,3 @@ validTagPutObject = object
   , "name" .= ("The name you want to give to the tag with the above id" :: Text)
   , "genre" .= ("One of " ++ show allGenres)
   ]
-
-
--- JSON API
-
-tagIdentifier :: Tag -> Identifier
-tagIdentifier tag = Identifier
-  (pack . show . tagID $ tag)
-  "tag"
-  (resourceMetaData tag)
-
-instance ResourcefulEntity Tag where
-  resourceIdentifier = pack . show . tagID
-  resourceType _ = "tag"
-  resourceLinks = Just . tagLinks
-  resourceMetaData _ = Nothing
-  resourceRelationships _ = Nothing
-
-tagLinks :: Tag -> Links
-tagLinks tag = mkLinks [("self", selfLink)]
-  where
-    selfLink = toURL selfPath
-    selfPath = "/tag/" <> show (tagID tag)

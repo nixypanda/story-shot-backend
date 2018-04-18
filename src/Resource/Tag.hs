@@ -18,25 +18,14 @@ import Data.Int (Int64)
 import GHC.Generics (Generic)
 
 import Data.Aeson (ToJSON(..))
-import Network.JSONApi
-  ( Document
-  , ErrorDocument(..)
-  , MetaObject(..)
-  , Links
-  , Meta
-  , mkMeta
-  , mkLinks
-  , mkDocument
-  , singleton
-  , mkDocument'
-  )
 
-import Storage.Tag
-import Type.Pagination
-import Type.Tag
-import Utils (toURL)
 import Init (WithConfig)
-import Exception.AppError (APIError, ClientError(..), toErrorDoc)
+import Type.Pagination
+import Type.Doc 
+import Type.Tag
+import Type.AppError
+import Storage.Tag
+import Utils (toURL)
 
 
 -- CREATE
@@ -107,14 +96,6 @@ instance ToJSON TagMetaData where
   toJSON (CountInfo count) = toJSON count
 
 
-
--- Builds the Links data for the 'index' action
-indexLinks :: Links
-indexLinks = mkLinks [("self", selfLink)]
-  where
-    selfLink = toURL "/tag"
-
-
 -- Builds the Meta data for the 'index' action
 indexMetaData :: [Tag] -> Meta
 indexMetaData tags = mkMeta (CursorInfo Cursor
@@ -124,35 +105,28 @@ indexMetaData tags = mkMeta (CursorInfo Cursor
 
 
 -- Builds the repsonse Document for the 'index' action
-indexDocument :: [Tag] -> Links -> Meta -> Document Tag
-indexDocument tags links meta =
-  mkDocument tags (Just links) (Just meta)
+indexDocument :: [Tag] -> Meta -> Document Tag
+indexDocument tags meta =
+  mkListDoc tags (Just meta)
 
 
 indexDocument' :: Tag -> Document Tag
-indexDocument' story' =
-  mkDocument' (singleton story') Nothing Nothing
+indexDocument' = mkSingleDoc
 
 
 docMulti :: [Tag] -> Document Tag
 docMulti tags =
-  indexDocument tags indexLinks $ indexMetaData tags
+  indexDocument tags $ indexMetaData tags
 
 
 docMetaOrError :: Int64 -> Either (ErrorDocument Tag) (Document Tag)
 docMetaOrError 0 = Left $ docError ResourceNotFound
-docMetaOrError 1 = Right $ indexDocument [] indexLinks $ mkMeta $ CountInfo 1
+docMetaOrError 1 = Right $ indexDocument [] $ mkMeta $ CountInfo 1
 docMetaOrError _ = error "Impossible"
 
 
 docMeta :: Int -> Document Tag
-docMeta =
-  indexDocument [] indexLinks . mkMeta . CountInfo
-
-
-docError :: APIError e => e -> ErrorDocument a
-docError e =
-  ErrorDocument (toErrorDoc e) Nothing Nothing
+docMeta = indexDocument [] . mkMeta . CountInfo
 
 
 docOrError :: Maybe Tag -> Either (ErrorDocument a) (Document Tag)
