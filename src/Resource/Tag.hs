@@ -14,121 +14,120 @@ module Resource.Tag
   , deleteTagResource
   ) where
 
-import Data.Int (Int64)
-import GHC.Generics (Generic)
+import qualified Data.Int as DI
+import qualified GHC.Generics as Generics
 
-import Data.Aeson (ToJSON(..))
+import qualified Data.Aeson as DA
 
-import Init (WithConfig)
-import Type.Pagination
-import Type.Doc 
-import Type.Tag
-import Type.AppError
-import Storage.Tag
-import Utils (toURL)
+import qualified Init as I
+import qualified Type.Pagination as TP
+import qualified Type.Doc as TD
+import qualified Type.Tag as TT
+import qualified Type.AppError as TAe
+import qualified Storage.Tag as ST
 
 
 -- CREATE
 
-createTagResource :: TagInsert -> WithConfig (Document Tag)
+createTagResource :: TT.TagInsert -> I.WithConfig (TD.Document TT.Tag)
 createTagResource =
-  fmap indexDocument' . createTag
+  fmap indexDocument' . ST.createTag
 
 
-createTagResources :: [TagInsert] -> WithConfig (Document Tag)
+createTagResources :: [TT.TagInsert] -> I.WithConfig (TD.Document TT.Tag)
 createTagResources =
-  fmap docMulti . createTags
+  fmap docMulti . ST.createTags
 
 
 
 -- RETRIVE
 
-getTagResources :: CursorParam -> WithConfig (Document Tag)
+getTagResources :: TP.CursorParam -> I.WithConfig (TD.Document TT.Tag)
 getTagResources cp =
-  docMulti <$> getTags cp
+  docMulti <$> ST.getTags cp
 
 
-getTagResource :: Int -> WithConfig (Either (ErrorDocument Tag) (Document Tag))
+getTagResource :: Int -> I.WithConfig (Either (TD.ErrorDocument TT.Tag) (TD.Document TT.Tag))
 getTagResource =
-  fmap docOrError . getTag
+  fmap docOrError . ST.getTag
 
 
 
 -- UPDATE
 
-updateTagResource :: TagPut -> WithConfig (Either (ErrorDocument Tag) (Document Tag))
+updateTagResource :: TT.TagPut -> I.WithConfig (Either (TD.ErrorDocument TT.Tag) (TD.Document TT.Tag))
 updateTagResource = 
-  fmap docOrError . updateTag
+  fmap docOrError . ST.updateTag
 
 
-updateTagResources :: [TagPut] -> WithConfig (Document Tag)
+updateTagResources :: [TT.TagPut] -> I.WithConfig (TD.Document TT.Tag)
 updateTagResources =
-  fmap docMulti . updateTags
+  fmap docMulti . ST.updateTags
 
 
 
 -- DELETE
 
-deleteTagResource :: Int -> WithConfig (Either (ErrorDocument Tag) (Document Tag))
+deleteTagResource :: Int -> I.WithConfig (Either (TD.ErrorDocument TT.Tag) (TD.Document TT.Tag))
 deleteTagResource =
-    fmap docMetaOrError . deleteTag
+    fmap docMetaOrError . ST.deleteTag
 
 
-deleteTagResources :: [Int] -> WithConfig (Document Tag)
+deleteTagResources :: [Int] -> I.WithConfig (TD.Document TT.Tag)
 deleteTagResources =
-  fmap (docMeta . fromIntegral) . deleteTags
+  fmap (docMeta . fromIntegral) . ST.deleteTags
 
 
 -- HELPERS
 
 -- JSON API Related
 
-data TagMetaData = CursorInfo Cursor | CountInfo Int
-  deriving (Eq, Show, Generic)
+data TagMetaData = CursorInfo TP.Cursor | CountInfo Int
+  deriving (Eq, Show, Generics.Generic)
 
-instance MetaObject TagMetaData where
+instance TD.MetaObject TagMetaData where
   typeName (CursorInfo _) = "cursor"
   typeName (CountInfo _) = "count"
 
 
-instance ToJSON TagMetaData where
-  toJSON (CursorInfo cur) = toJSON cur
-  toJSON (CountInfo count) = toJSON count
+instance DA.ToJSON TagMetaData where
+  toJSON (CursorInfo cur) = DA.toJSON cur
+  toJSON (CountInfo count) = DA.toJSON count
 
 
 -- Builds the Meta data for the 'index' action
-indexMetaData :: [Tag] -> Meta
-indexMetaData tags = mkMeta (CursorInfo Cursor
-  { next = if null tags then 0 else maximum (fmap tagID tags)
-  , size = length tags
+indexMetaData :: [TT.Tag] -> TD.Meta
+indexMetaData tags = TD.mkMeta (CursorInfo TP.Cursor
+  { TP.next = if null tags then 0 else maximum (fmap TT.tagID tags)
+  , TP.size = length tags
   })
 
 
 -- Builds the repsonse Document for the 'index' action
-indexDocument :: [Tag] -> Meta -> Document Tag
+indexDocument :: [TT.Tag] -> TD.Meta -> TD.Document TT.Tag
 indexDocument tags meta =
-  mkListDoc tags (Just meta)
+  TD.mkListDoc tags (Just meta)
 
 
-indexDocument' :: Tag -> Document Tag
-indexDocument' = mkSingleDoc
+indexDocument' :: TT.Tag -> TD.Document TT.Tag
+indexDocument' = TD.mkSingleDoc
 
 
-docMulti :: [Tag] -> Document Tag
+docMulti :: [TT.Tag] -> TD.Document TT.Tag
 docMulti tags =
   indexDocument tags $ indexMetaData tags
 
 
-docMetaOrError :: Int64 -> Either (ErrorDocument Tag) (Document Tag)
-docMetaOrError 0 = Left $ docError ResourceNotFound
-docMetaOrError 1 = Right $ indexDocument [] $ mkMeta $ CountInfo 1
+docMetaOrError :: DI.Int64 -> Either (TD.ErrorDocument TT.Tag) (TD.Document TT.Tag)
+docMetaOrError 0 = Left $ TAe.docError TAe.ResourceNotFound
+docMetaOrError 1 = Right $ indexDocument [] $ TD.mkMeta $ CountInfo 1
 docMetaOrError _ = error "Impossible"
 
 
-docMeta :: Int -> Document Tag
-docMeta = indexDocument [] . mkMeta . CountInfo
+docMeta :: Int -> TD.Document TT.Tag
+docMeta = indexDocument [] . TD.mkMeta . CountInfo
 
 
-docOrError :: Maybe Tag -> Either (ErrorDocument a) (Document Tag)
-docOrError Nothing = Left $ docError ResourceNotFound
+docOrError :: Maybe TT.Tag -> Either (TD.ErrorDocument a) (TD.Document TT.Tag)
+docOrError Nothing = Left $ TAe.docError TAe.ResourceNotFound
 docOrError (Just at) = Right $ indexDocument' at

@@ -6,11 +6,11 @@ module Type.Pagination
   , Cursor(..)
   ) where
 
+import qualified GHC.Generics as Generics
 
-import Data.Aeson (ToJSON)
-import Data.Default
+import qualified Data.Aeson as DA
+import qualified Data.Default as Default
 
-import GHC.Generics (Generic)
 
 
 -- Offset based pagination
@@ -28,7 +28,7 @@ data OffsetParam = OffsetParam
   } deriving (Show, Eq)
 
 
-instance Default OffsetParam where
+instance Default.Default OffsetParam where
   def = OffsetParam 1 10
 
 
@@ -36,10 +36,10 @@ instance Default OffsetParam where
 data Cursor = Cursor
   { next :: Int
   , size :: Int
-  } deriving (Show, Eq, Generic)
+  } deriving (Show, Eq, Generics.Generic)
 
 
-instance ToJSON Cursor
+instance DA.ToJSON Cursor
 
 
 data CursorParam = CursorParam
@@ -48,5 +48,5 @@ data CursorParam = CursorParam
   } deriving (Show, Eq)
 
 
-instance Default CursorParam where
+instance Default.Default CursorParam where
   def = CursorParam 0 10

@@ -19,104 +19,89 @@ module Storage.Author
   ) where
 
 
-import Control.Arrow (returnA)
-import Data.Int (Int64)
-import Data.Maybe (listToMaybe, catMaybes)
+import qualified Control.Arrow as Arrow
+import qualified Data.Int as DI
+import qualified Data.Maybe as DM
 
-import Opaleye
-  ( Query
-  , QueryArr
-  , (.==)
-  , (.>)
-  , in_
-  , constant
-  , limit
-  , queryTable
-  , restrict
-  )
+import qualified Opaleye as O
 
-import Type.Pagination
-import Type.Author
-import Init (WithConfig)
-import Storage.Utils
-  ( runDB
-  , runDBInsertR
-  , runDBUpdateR
-  , runDBDelete
-  )
+import qualified Type.Pagination as TP
+import qualified Type.Author as TA
+import qualified Init as I
+import qualified Storage.Utils as SU
 
 
 -- CREATE
 
-createAuthor :: AuthorInsert -> WithConfig Author
+createAuthor :: TA.AuthorInsert -> I.WithConfig TA.Author
 createAuthor =
   fmap head . createAuthors . return
 
 
-createAuthors :: [AuthorInsert] -> WithConfig [Author]
+createAuthors :: [TA.AuthorInsert] -> I.WithConfig [TA.Author]
 createAuthors authors =
-  runDBInsertR authorTable (map mkAuthorWrite' authors) id
+  SU.runDBInsertR TA.authorTable (map TA.mkAuthorWrite' authors) id
 
 
 -- RETRIVE
 
 
-authorQuery :: Query AuthorRead
-authorQuery = queryTable authorTable
+authorQuery :: O.Query TA.AuthorRead
+authorQuery = O.queryTable TA.authorTable
 
-multiAuthorQuery :: [Int] -> Query AuthorRead
+multiAuthorQuery :: [Int] -> O.Query TA.AuthorRead
 multiAuthorQuery aids = proc () -> do
   row <- authorQuery -< ()
-  restrict -< map constant aids `in_` authorColID row
-  returnA -< row
+  O.restrict -< map O.constant aids `O.in_` TA.authorColID row
+  Arrow.returnA -< row
 
-cursorPaginatedAuthorQuery :: CursorParam -> Query AuthorRead
-cursorPaginatedAuthorQuery CursorParam{..} = limit sizeCursor $ proc () -> do
+cursorPaginatedAuthorQuery :: TP.CursorParam -> O.Query TA.AuthorRead
+cursorPaginatedAuthorQuery TP.CursorParam{..} = O.limit sizeCursor $ proc () -> do
   row <- authorQuery -< ()
-  restrict -< authorColID row .> constant nextCursor
-  returnA -< row
+  O.restrict -< TA.authorColID row O..> O.constant nextCursor
+  Arrow.returnA -< row
 
-singleAuthor :: Int -> Query AuthorRead
+singleAuthor :: Int -> O.Query TA.AuthorRead
 singleAuthor idA = proc () -> do
   row <- authorQuery -< ()
-  restrict -< authorColID row .== constant idA
-  returnA -< row
+  O.restrict -< TA.authorColID row O..== O.constant idA
+  Arrow.returnA -< row
 
-getAuthors :: CursorParam -> WithConfig [Author]
-getAuthors = runDB . cursorPaginatedAuthorQuery
+getAuthors :: TP.CursorParam -> I.WithConfig [TA.Author]
+getAuthors = SU.runDB . cursorPaginatedAuthorQuery
 
-getAuthor :: Int -> WithConfig (Maybe Author)
-getAuthor = fmap listToMaybe . runDB . singleAuthor
+getAuthor :: Int -> I.WithConfig (Maybe TA.Author)
+getAuthor = fmap DM.listToMaybe . SU.runDB . singleAuthor
 
-getMultiAuthors :: [Int] -> WithConfig [Author]
-getMultiAuthors = runDB . multiAuthorQuery
+getMultiAuthors :: [Int] -> I.WithConfig [TA.Author]
+getMultiAuthors = SU.runDB . multiAuthorQuery
 
 
 
 -- UPDATE
 
-updateAuthors :: [AuthorPut] -> WithConfig [Author]
+updateAuthors :: [TA.AuthorPut] -> I.WithConfig [TA.Author]
 updateAuthors =
-  fmap catMaybes . mapM updateAuthor
+  fmap DM.catMaybes . mapM updateAuthor
 
 
-updateAuthor :: AuthorPut -> WithConfig (Maybe Author)
+updateAuthor :: TA.AuthorPut -> I.WithConfig (Maybe TA.Author)
 updateAuthor author =
   let
-    updateF _ = mkAuthorWrite author
-    predicate aRow = authorColID aRow .== constant (authorID author)
+    updateF _ = TA.mkAuthorWrite author
+    predicate aRow = TA.authorColID aRow O..== O.constant (TA.authorID author)
   in
-    listToMaybe <$> runDBUpdateR authorTable updateF predicate id
+    DM.listToMaybe <$> SU.runDBUpdateR TA.authorTable updateF predicate id
 
 
 
 -- DELETE
 
-deleteAuthor :: Int -> WithConfig Int64
+deleteAuthor :: Int -> I.WithConfig DI.Int64
 deleteAuthor id' =
-  runDBDelete authorTable (\aic -> authorColID aic .== constant id')
+  SU.runDBDelete TA.authorTable (\aic -> TA.authorColID aic O..== O.constant id')
 
 
-deleteAuthors :: [Int] -> WithConfig Int64
+deleteAuthors :: [Int] -> I.WithConfig DI.Int64
 deleteAuthors =
   fmap sum . mapM deleteAuthor

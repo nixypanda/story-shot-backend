@@ -8,70 +8,64 @@ module Lib
   ( startServer
   ) where
 
-import Control.Monad.Trans.Reader (runReaderT)
+import qualified Control.Monad.Trans.Reader as ReaderTrans
 
-import Network.Wai.Middleware.Cors (simpleCors)
-import Web.Scotty.Trans
+import qualified Network.Wai.Middleware.Cors as WaiCORS
+import qualified Web.Scotty.Trans as Scotty
 
-import Controller.Basic
-
+import qualified Controller.Basic as CB
 import qualified Controller.Author as AC
 import qualified Controller.Tag as TC
 import qualified Controller.Story as SC
 
-import Init
-  ( Config(..)
-  , ScottyA
-  , getConfig
-  , loggingM
-  , getOptions
-  )
+import qualified Init as I
 
-application :: Config -> ScottyA
+
+application :: I.Config -> I.ScottyA
 application c = do
-  let e = environment c
+  let e = I.environment c
 
-  middleware $ loggingM e
-  middleware simpleCors
-  defaultHandler $ defaultH e
+  Scotty.middleware $ I.loggingM e
+  Scotty.middleware WaiCORS.simpleCors
+  Scotty.defaultHandler $ CB.defaultH e
 
-  get "/" indexRoute
-  get "/health" health
+  Scotty.get "/" CB.indexRoute
+  Scotty.get "/health" CB.health
 
-  post   "/story"        SC.post
-  get    "/story"        SC.getBatch
-  get    "/story/:id"    SC.get
-  get    "/story/random" SC.getRandom
-  put    "/story"        SC.putBatch
-  put    "/story/:id"    SC.put
-  delete "/story"        SC.deleteBatch
-  delete "/story/:id"    SC.delete
+  Scotty.post   "/story"        SC.post
+  Scotty.get    "/story"        SC.getBatch
+  Scotty.get    "/story/:id"    SC.get
+  Scotty.get    "/story/random" SC.getRandom
+  Scotty.put    "/story"        SC.putBatch
+  Scotty.put    "/story/:id"    SC.put
+  Scotty.delete "/story"        SC.deleteBatch
+  Scotty.delete "/story/:id"    SC.delete
 
-  post   "/tag"     TC.post
-  get    "/tag"     TC.getBatch
-  get    "/tag/:id" TC.get
-  put    "/tag"     TC.putBatch
-  put    "/tag/:id" TC.put
-  delete "/tag"     TC.deleteBatch
-  delete "/tag/:id" TC.delete
+  Scotty.post   "/tag"     TC.post
+  Scotty.get    "/tag"     TC.getBatch
+  Scotty.get    "/tag/:id" TC.get
+  Scotty.put    "/tag"     TC.putBatch
+  Scotty.put    "/tag/:id" TC.put
+  Scotty.delete "/tag"     TC.deleteBatch
+  Scotty.delete "/tag/:id" TC.delete
 
-  post   "/author"     AC.post
-  get    "/author"     AC.getBatch
-  get    "/author/:id" AC.get
-  put    "/author"     AC.putBatch
-  put    "/author/:id" AC.put
-  delete "/author"     AC.deleteBatch
-  delete "/author/:id" AC.delete
+  Scotty.post   "/author"     AC.post
+  Scotty.get    "/author"     AC.getBatch
+  Scotty.get    "/author/:id" AC.get
+  Scotty.put    "/author"     AC.putBatch
+  Scotty.put    "/author/:id" AC.put
+  Scotty.delete "/author"     AC.deleteBatch
+  Scotty.delete "/author/:id" AC.delete
 
-  notFound notFoundA
+  Scotty.notFound CB.notFoundA
 
 
 startServer :: IO ()
 startServer = do
-  appConfig <- getConfig
+  appConfig <- I.getConfig
   let
-    opts = getOptions appConfig
-    r m = runReaderT m appConfig
+    opts = I.getOptions appConfig
+    r m = ReaderTrans.runReaderT m appConfig
 
-  scottyOptsT opts r $ application appConfig
+  Scotty.scottyOptsT opts r $ application appConfig
 

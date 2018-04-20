@@ -8,7 +8,7 @@ module Init
   , ScottyA
   , WithConfig
   , Config(..)
-  , Environment(..)
+  , E.Environment(..)
   , getConfig
   , loggingM
   , getOptions
@@ -18,43 +18,33 @@ module Init
    I had no idea where to shove these functions/types/etc. so here it goes.
  -}
 
-import Control.Monad.Reader (ReaderT)
+import qualified Control.Monad.Reader as ReaderTrans
 
-import Data.Default (def)
-import Data.Pool (Pool, createPool)
-import Data.Text.Lazy (Text)
-import Database.PostgreSQL.Simple (Connection, connect, close)
-import Network.Wai.Handler.Warp
-  ( Settings
-  , defaultSettings
-  , setPort
-  )
-import Network.Wai (Middleware)
-import Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
-import Web.Scotty.Trans
-  ( ActionT
-  , Options
-  , ScottyT
-  , settings
-  , verbose
-  )
+import qualified Data.Default as Default
+import qualified Data.Pool as Pool
+import qualified Data.Text.Lazy as LazyText
+import qualified Database.PostgreSQL.Simple as PGS
+import qualified Network.Wai.Handler.Warp as NetworkHandler
+import qualified Network.Wai as Wai
+import qualified Network.Wai.Middleware.RequestLogger as MiddlewareLogging
+import qualified Web.Scotty.Trans as Scotty
 
-import Environment (Environment(..), EnvVars(..), readEnv)
+import qualified Environment as E
 
 
 -- TYPES
 
-type WithConfig = ReaderT Config IO
-type ActionA = ActionT Error WithConfig ()
-type ScottyA = ScottyT Error WithConfig ()
-type Error = Text
+type WithConfig = ReaderTrans.ReaderT Config IO
+type ActionA    = Scotty.ActionT Error WithConfig ()
+type ScottyA    = Scotty.ScottyT Error WithConfig ()
+type Error      = LazyText.Text
 
 -- Setup
 
 data Config = Config
-  { connPool :: Pool Connection
+  { connPool :: Pool.Pool PGS.Connection
   , port :: Int
-  , environment :: Environment
+  , environment :: E.Environment
   }
 
 
@@ -62,32 +52,32 @@ data Config = Config
 
 getConfig :: IO Config
 getConfig = do
-  env <- readEnv
-  pgPool <- createPool (connect $ dbConfig env) close 1 10 10
+  env <- E.readEnv
+  pgPool <- Pool.createPool (PGS.connect $ E.dbConfig env) PGS.close 1 10 10
   return Config
     { connPool = pgPool
-    , port = appPort env
-    , environment = environ env
+    , port = E.appPort env
+    , environment = E.environ env
     }
 
 
-getOptions :: Config -> Options
-getOptions c@Config{..} = def
-  { settings = getSettings c
-  , verbose = fromEnum $ environment == Development
+getOptions :: Config -> Scotty.Options
+getOptions c@Config{..} = Default.def
+  { Scotty.settings = getSettings c
+  , Scotty.verbose = fromEnum $ environment == E.Development
   }
 
 
 -- HELPERS --
 
-loggingM :: Environment -> Middleware
-loggingM Development = logStdoutDev
-loggingM Production = logStdout
-loggingM Test = id
+loggingM :: E.Environment -> Wai.Middleware
+loggingM E.Development = MiddlewareLogging.logStdoutDev
+loggingM E.Production  = MiddlewareLogging.logStdout
+loggingM E.Test = id
 
 
 -- Application Config
 
-getSettings :: Config -> Settings
+getSettings :: Config -> NetworkHandler.Settings
 getSettings Config{..} =
-  setPort port defaultSettings
+  NetworkHandler.setPort port NetworkHandler.defaultSettings

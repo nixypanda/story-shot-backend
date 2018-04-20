@@ -6,9 +6,9 @@ module Environment
   , readEnv
   ) where
 
-import Database.PostgreSQL.Simple (ConnectInfo(..))
+import qualified Database.PostgreSQL.Simple as PGS
 
-import Utils (fromMaybeEnv)
+import qualified Utils
 
 
 data Environment
@@ -19,7 +19,7 @@ data Environment
 
 
 data EnvVars = EnvVars
-  { dbConfig :: ConnectInfo
+  { dbConfig :: PGS.ConnectInfo
   , appPort :: Int
   , environ :: Environment
   }
@@ -27,16 +27,16 @@ data EnvVars = EnvVars
 
 getEnvironment :: IO Environment
 getEnvironment =
-  fromMaybeEnv Development "SCOTTY_ENV"
+  Utils.fromMaybeEnv Development "SCOTTY_ENV"
 
 
-getDBConfig :: IO ConnectInfo
-getDBConfig = ConnectInfo
-  <$> fromMaybeEnv "localhost" "DB_URL"
-  <*> fromMaybeEnv 5432 "DB_PORT"
-  <*> fromMaybeEnv "sherub" "DB_USER"
-  <*> fromMaybeEnv "story-shot" "DB_PASS"
-  <*> fromMaybeEnv "story-shot" "DB_NAME"
+getDBConfig :: IO PGS.ConnectInfo
+getDBConfig = PGS.ConnectInfo
+  <$> Utils.fromMaybeEnv "localhost" "DB_URL"
+  <*> Utils.fromMaybeEnv 5432 "DB_PORT"
+  <*> Utils.fromMaybeEnv "sherub" "DB_USER"
+  <*> Utils.fromMaybeEnv "story-shot" "DB_PASS"
+  <*> Utils.fromMaybeEnv "story-shot" "DB_NAME"
 
 
 -- Read Environment
@@ -44,5 +44,5 @@ getDBConfig = ConnectInfo
 readEnv :: IO EnvVars
 readEnv = EnvVars
   <$> getDBConfig
-  <*> fromMaybeEnv 8081 "SCOTTY_PORT"
+  <*> Utils.fromMaybeEnv 8081 "SCOTTY_PORT"
   <*> getEnvironment

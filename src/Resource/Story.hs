@@ -15,138 +15,138 @@ module Resource.Story
   , deleteStoryResource
   ) where
 
-import Data.Int (Int64)
-import Data.Map (Map, lookup, fromList, (!))
-import Data.Maybe (fromMaybe, fromJust)
-import GHC.Generics (Generic)
+import qualified Data.Int as DI
+import qualified Data.Map as M
+import qualified Data.Maybe as DM
+import qualified GHC.Generics as Generics
 
-import Data.Aeson (ToJSON(toJSON))
-import Type.Doc
+import qualified Data.Aeson as DA
 
-import Init (WithConfig)
-import Type.Or
-import Type.Story
-import Type.Author (AuthorS, Author, mkAuthorS, authorID)
-import Type.Tag (Tag, TagS, mkTagS)
-import Type.Pagination
-import Type.AppError
-import Storage.Story
-import Storage.Author (getAuthor, getMultiAuthors)
+import qualified Init as I
+import qualified Type.Or as Or
+import qualified Type.Doc as TD
+import qualified Type.Pagination as TP
+import qualified Type.AppError as TAe
+import qualified Type.Story as TS
+import qualified Type.Author as TA
+import qualified Type.Tag as TT
+import qualified Storage.Story as SS
+import qualified Storage.Author as SA
 
 
 -- CREATE
 
-createStoryResource :: Either ClientError [StoryIncludes]
-                    -> StoryInsert
-                    -> WithConfig (Either (ErrorDocument Story) (Document Story))
-createStoryResource (Left e) _ = return $ Left $ docError e
+createStoryResource :: Either TAe.ClientError [TS.StoryIncludes]
+                    -> TS.StoryInsert
+                    -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
+createStoryResource (Left e) _ = return $ Left $ TAe.docError e
 createStoryResource (Right includes) si =
-  createStory si >>= fmap (Right . indexDocument') . _fromPGStory includes
+  SS.createStory si >>= fmap (Right . indexDocument') . _fromPGStory includes
 
 
-createStoryResources :: Either ClientError [StoryIncludes]
-                     -> [StoryInsert]
-                     -> WithConfig (Either (ErrorDocument Story) (Document Story))
-createStoryResources (Left e) _ = return $ Left $ docError e
+createStoryResources :: Either TAe.ClientError [TS.StoryIncludes]
+                     -> [TS.StoryInsert]
+                     -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
+createStoryResources (Left e) _ = return $ Left $ TAe.docError e
 createStoryResources (Right includes) sis =
-  createStories sis >>= fmap (Right . docMulti) . _fromPGStories includes
+  SS.createStories sis >>= fmap (Right . docMulti) . _fromPGStories includes
 
 
 
 -- RETRIVE
 
-getStoryResources :: CursorParam
-                  -> Either ClientError [StoryIncludes]
-                  -> WithConfig (Either (ErrorDocument Story) (Document Story))
-getStoryResources _ (Left e) = return $ Left $ docError e
+getStoryResources :: TP.CursorParam
+                  -> Either TAe.ClientError [TS.StoryIncludes]
+                  -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
+getStoryResources _ (Left e) = return $ Left $ TAe.docError e
 getStoryResources cur (Right includes) =
-  getStories cur >>= fmap (Right . docMulti) . _fromPGStories includes
+  SS.getStories cur >>= fmap (Right . docMulti) . _fromPGStories includes
 
 
 getStoryResource :: Int
-                 -> Either ClientError [StoryIncludes]
-                 -> WithConfig (Either (ErrorDocument Story) (Document Story))
-getStoryResource _ (Left e) = return $ Left $ docError e
+                 -> Either TAe.ClientError [TS.StoryIncludes]
+                 -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
+getStoryResource _ (Left e) = return $ Left $ TAe.docError e
 getStoryResource sid (Right includes) = do
-  mstory <- getStory sid
+  mstory <- SS.getStory sid
   case mstory of
     Nothing ->
-      return $ Left $ docError ResourceNotFound
+      return $ Left $ TAe.docError TAe.ResourceNotFound
 
     Just pgstory ->
       Right . indexDocument' <$> _fromPGStory includes pgstory
 
 
-getRandomStoryResource :: Either ClientError [StoryIncludes]
-                       -> WithConfig (Either (ErrorDocument Story) (Document Story))
-getRandomStoryResource (Left e) = return $ Left $ docError e
+getRandomStoryResource :: Either TAe.ClientError [TS.StoryIncludes]
+                       -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
+getRandomStoryResource (Left e) = return $ Left $ TAe.docError e
 getRandomStoryResource (Right includes) = do
-  mstory <- getRandomStory
+  mstory <- SS.getRandomStory
   case mstory of
     Nothing -> 
-      return $ Left $ docError ResourceNotFound
+      return $ Left $ TAe.docError TAe.ResourceNotFound
 
     Just pgStory ->
       Right . indexDocument' <$> _fromPGStory includes pgStory
 
 
 
-_fromPGStory :: [StoryIncludes] -> PGStory -> WithConfig Story
+_fromPGStory :: [TS.StoryIncludes] -> TS.PGStory -> I.WithConfig TS.Story
 _fromPGStory includes pgstory = do
   let
-    sid = pgStoryID pgstory
-    aid = storyAuthorID pgstory
-  eauthor <- if IAuthor `elem` includes
+    sid = TS.pgStoryID pgstory
+    aid = TS.storyAuthorID pgstory
+  eauthor <- if TS.IAuthor `elem` includes
                 then do
-                  mauthor <- getAuthor aid
+                  mauthor <- SA.getAuthor aid
                   case mauthor of
                     Nothing -> error $ "An author should exist with ID: " ++ show aid
-                    Just author -> return . Or $ Right author
-                else return . Or . Left $ mkAuthorS aid
-  etags <- if ITags `elem` includes
-              then (Or . Right) <$> getTagsForStory sid
-              else (Or . Left . map mkTagS) <$> getTagIDsForStory sid
-  return $ mkStoryFromDB pgstory eauthor etags
+                    Just author -> return . Or.Or $ Right author
+                else return . Or.Or . Left $ TA.mkAuthorS aid
+  etags <- if TS.ITags `elem` includes
+              then (Or.Or . Right) <$> SS.getTagsForStory sid
+              else (Or.Or . Left . map TT.mkTagS) <$> SS.getTagIDsForStory sid
+  return $ TS.mkStoryFromDB pgstory eauthor etags
 
-_linkAll :: [PGStory]
-         -> Either (Map Int AuthorS) (Map Int Author)
-         -> Either (Map Int [TagS]) (Map Int [Tag])
-         -> [Story]
+_linkAll :: [TS.PGStory]
+         -> Either (M.Map Int TA.AuthorS) (M.Map Int TA.Author)
+         -> Either (M.Map Int [TT.TagS]) (M.Map Int [TT.Tag])
+         -> [TS.Story]
 _linkAll stories idAuthorMap idTagMap =
   let
-    _convert :: Either (Map k a) (Map k b) -> Map k (Or a b)
-    _convert (Left m) = fmap (Or . Left) m
-    _convert (Right m) = fmap (Or . Right) m
+    _convert :: Either (M.Map k a) (M.Map k b) -> M.Map k (Or.Or a b)
+    _convert (Left m) = fmap (Or.Or . Left) m
+    _convert (Right m) = fmap (Or.Or . Right) m
 
-    getTagsFor :: Int -> Or [TagS] [Tag]
-    getTagsFor pid = fromMaybe (Or $ Left []) . Data.Map.lookup pid $ _convert idTagMap
+    getTagsFor :: Int -> Or.Or [TT.TagS] [TT.Tag]
+    getTagsFor pid = DM.fromMaybe (Or.Or $ Left []) . M.lookup pid $ _convert idTagMap
 
-    getAuthorFor :: Int -> Or AuthorS Author
-    getAuthorFor pid = fromJust $ Data.Map.lookup pid $ _convert idAuthorMap
+    getAuthorFor :: Int -> Or.Or TA.AuthorS TA.Author
+    getAuthorFor pid = DM.fromJust $ M.lookup pid $ _convert idAuthorMap
 
-    getStory' sg = mkStoryFromDB sg (getAuthorFor pid) (getTagsFor pid)
-      where pid = pgStoryID sg
+    getStory' sg = TS.mkStoryFromDB sg (getAuthorFor pid) (getTagsFor pid)
+      where pid = TS.pgStoryID sg
   in
     map getStory' stories
 
 
-_fromPGStories :: [StoryIncludes] -> [PGStory] -> WithConfig [Story]
+_fromPGStories :: [TS.StoryIncludes] -> [TS.PGStory] -> I.WithConfig [TS.Story]
 _fromPGStories includes stories = do
   let
-    storyIDs = map pgStoryID stories
-    authorIDs = map storyAuthorID stories
-    storyAuthorIDMap = fromList $ zip storyIDs authorIDs
+    storyIDs = map TS.pgStoryID stories
+    authorIDs = map TS.storyAuthorID stories
+    storyAuthorIDMap = M.fromList $ zip storyIDs authorIDs
 
-  storyTagMap <- if ITags `elem` includes
-                    then Right <$> getTagsForStories storyIDs
-                    else Left <$> getTagIDsForStories storyIDs
-  authorsMap <- if IAuthor `elem` includes
+  storyTagMap <- if TS.ITags `elem` includes
+                    then Right <$> SS.getTagsForStories storyIDs
+                    else Left <$> SS.getTagIDsForStories storyIDs
+  authorsMap <- if TS.IAuthor `elem` includes
                    then do
-                     authors <- getMultiAuthors authorIDs
+                     authors <- SA.getMultiAuthors authorIDs
                      let
-                       authorIDToAuthorMap = fromList [(authorID a, a) | a <- authors]
-                     return . Right $ fmap (authorIDToAuthorMap !) storyAuthorIDMap
-                   else return . Left $ fmap mkAuthorS storyAuthorIDMap
+                       authorIDToAuthorMap = M.fromList [(TA.authorID a, a) | a <- authors]
+                     return . Right $ fmap (authorIDToAuthorMap M.!) storyAuthorIDMap
+                   else return . Left $ fmap TA.mkAuthorS storyAuthorIDMap
 
   return $ _linkAll stories authorsMap storyTagMap
 
@@ -154,27 +154,27 @@ _fromPGStories includes stories = do
 
 -- UPDATE
 
-updateStoryResource :: StoryPut -> WithConfig (Either (ErrorDocument Story) (Document Story))
+updateStoryResource :: TS.StoryPut -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
 updateStoryResource = 
-  fmap docOrError . updateStory
+  fmap docOrError . SS.updateStory
 
 
-updateStoryResources :: [StoryPut] -> WithConfig (Document Story)
+updateStoryResources :: [TS.StoryPut] -> I.WithConfig (TD.Document TS.Story)
 updateStoryResources =
-  fmap docMulti . updateStories
+  fmap docMulti . SS.updateStories
 
 
 
 -- DELETE
 
-deleteStoryResource :: Int -> WithConfig (Either (ErrorDocument Story) (Document Story))
+deleteStoryResource :: Int -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
 deleteStoryResource =
-    fmap docMetaOrError . deleteStory
+    fmap docMetaOrError . SS.deleteStory
 
 
-deleteStoryResources :: [Int] -> WithConfig (Document Story)
+deleteStoryResources :: [Int] -> I.WithConfig (TD.Document TS.Story)
 deleteStoryResources =
-    fmap (docMeta . fromIntegral) . deleteStories
+    fmap (docMeta . fromIntegral) . SS.deleteStories
 
 
 -- HELPERS
@@ -182,53 +182,53 @@ deleteStoryResources =
 
 -- JSON API Related
 
-data StoryMetaData = CursorInfo Cursor | CountInfo Int
-  deriving (Eq, Show, Generic)
+data StoryMetaData = CursorInfo TP.Cursor | CountInfo Int
+  deriving (Eq, Show, Generics.Generic)
 
-instance MetaObject StoryMetaData where
+instance TD.MetaObject StoryMetaData where
   typeName (CursorInfo _) = "cursor"
   typeName (CountInfo _) = "count"
 
 
-instance ToJSON StoryMetaData where
-  toJSON (CursorInfo cur) = toJSON cur
-  toJSON (CountInfo count) = toJSON count
+instance DA.ToJSON StoryMetaData where
+  toJSON (CursorInfo cur) = DA.toJSON cur
+  toJSON (CountInfo count) = DA.toJSON count
 
 
 -- Builds the Meta data for the 'index' action
-indexMetaData :: [Story] -> Meta
-indexMetaData stories = mkMeta (CursorInfo Cursor
-  { next = if null stories then 0 else maximum (fmap storyID stories)
-  , size = length stories
+indexMetaData :: [TS.Story] -> TD.Meta
+indexMetaData stories = TD.mkMeta (CursorInfo TP.Cursor
+  { TP.next = if null stories then 0 else maximum (fmap TS.storyID stories)
+  , TP.size = length stories
   })
 
 
--- Builds the repsonse Document for the 'index' action
-indexDocument :: [Story] -> Meta -> Document Story
+-- Builds the repsonse TD.Document for the 'index' action
+indexDocument :: [TS.Story] -> TD.Meta -> TD.Document TS.Story
 indexDocument stories meta =
-  mkListDoc stories (Just meta)
+  TD.mkListDoc stories (Just meta)
 
 
-indexDocument' :: Story -> Document Story
-indexDocument' = mkSingleDoc
+indexDocument' :: TS.Story -> TD.Document TS.Story
+indexDocument' = TD.mkSingleDoc
 
 
-docMulti :: [Story] -> Document Story
+docMulti :: [TS.Story] -> TD.Document TS.Story
 docMulti stories =
   indexDocument stories $ indexMetaData stories
 
 
-docMetaOrError :: Int64 -> Either (ErrorDocument Story) (Document Story)
-docMetaOrError 0 = Left $ docError ResourceNotFound
-docMetaOrError 1 = Right $ indexDocument [] $ mkMeta $ CountInfo 1
+docMetaOrError :: DI.Int64 -> Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story)
+docMetaOrError 0 = Left $ TAe.docError TAe.ResourceNotFound
+docMetaOrError 1 = Right $ indexDocument [] $ TD.mkMeta $ CountInfo 1
 docMetaOrError _ = error "Impossible"
 
 
-docMeta :: Int -> Document Story
+docMeta :: Int -> TD.Document TS.Story
 docMeta =
-  indexDocument [] . mkMeta . CountInfo
+  indexDocument [] . TD.mkMeta . CountInfo
 
 
-docOrError :: Maybe Story -> Either (ErrorDocument a) (Document Story)
-docOrError Nothing = Left $ docError ResourceNotFound
+docOrError :: Maybe TS.Story -> Either (TD.ErrorDocument a) (TD.Document TS.Story)
+docOrError Nothing = Left $ TAe.docError TAe.ResourceNotFound
 docOrError (Just at) = Right $ indexDocument' at

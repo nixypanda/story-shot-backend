@@ -4,69 +4,58 @@
 
 module Storage.Utils where
 
-import Control.Monad.Trans (liftIO)
-import Control.Monad.Trans.Reader (asks)
-import Data.Int (Int64)
-import Data.Pool (withResource)
+import qualified Control.Monad.Trans as MonadT
+import qualified Control.Monad.Trans.Reader as ReaderTrans
+import qualified Data.Int as DI
 
-import Data.Profunctor.Product.Default (Default)
-import Opaleye
-  ( Query
-  , QueryRunner
-  , Table
-  , Column
-  , PGBool
-  , runQuery
-  , runInsertMany
-  , runInsertManyReturning
-  , runUpdateReturning
-  , runDelete
-  )
+import qualified Data.Pool as Pool
+import qualified Data.Profunctor.Product.Default as PPfDefault
+import qualified Opaleye as O
 
-import Init (Config(..), WithConfig)
+import qualified Init as I
 
 
-runDB :: (Default QueryRunner columns haskells)
-      => Query columns
-      -> WithConfig [haskells]
+runDB :: (PPfDefault.Default O.QueryRunner columns haskells)
+      => O.Query columns
+      -> I.WithConfig [haskells]
 runDB q = do
-  pool <- asks connPool
-  withResource pool (\conn -> liftIO $ runQuery conn q)
+  pool <- ReaderTrans.asks I.connPool
+  Pool.withResource pool (\conn -> MonadT.liftIO $ O.runQuery conn q)
 
 
-runDBInsert :: Table columnsW columnsR
+runDBInsert :: O.Table columnsW columnsR
             -> [columnsW]
-            -> WithConfig Int64
+            -> I.WithConfig DI.Int64
 runDBInsert table rows = do
-  pool <- asks connPool
-  withResource pool (\conn -> liftIO $ runInsertMany conn table rows)
+  pool <- ReaderTrans.asks I.connPool
+  Pool.withResource pool (\conn -> MonadT.liftIO $ O.runInsertMany conn table rows)
 
 
-runDBInsertR :: Default QueryRunner columnsReturned haskells
-             => Table columnsW columnsR
+runDBInsertR :: PPfDefault.Default O.QueryRunner columnsReturned haskells
+             => O.Table columnsW columnsR
              -> [columnsW]
              -> (columnsR -> columnsReturned)
-             -> WithConfig [haskells]
+             -> I.WithConfig [haskells]
 runDBInsertR table rows f = do
-  pool <- asks connPool
-  withResource pool (\conn -> liftIO $ runInsertManyReturning  conn table rows f)
+  pool <- ReaderTrans.asks I.connPool
+  Pool.withResource pool (\conn -> MonadT.liftIO $ O.runInsertManyReturning  conn table rows f)
 
 
-runDBUpdateR :: (Default QueryRunner columnsReturned haskells)
-             => Table columnsW columnsR
+runDBUpdateR :: (PPfDefault.Default O.QueryRunner columnsReturned haskells)
+             => O.Table columnsW columnsR
              -> (columnsR -> columnsW)
-             -> (columnsR -> Column PGBool)
+             -> (columnsR -> O.Column O.PGBool)
              -> (columnsR -> columnsReturned)
-             -> WithConfig [haskells]
+             -> I.WithConfig [haskells]
 runDBUpdateR table f p g = do
-  pool <- asks connPool
-  withResource pool (\conn -> liftIO $ runUpdateReturning conn table f p g)
+  pool <- ReaderTrans.asks I.connPool
+  Pool.withResource pool (\conn -> MonadT.liftIO $ O.runUpdateReturning conn table f p g)
 
 
-runDBDelete :: Table a columnsR
-            -> (columnsR -> Column PGBool)
-            -> WithConfig Int64
+runDBDelete :: O.Table a columnsR
+            -> (columnsR -> O.Column O.PGBool)
+            -> I.WithConfig DI.Int64
 runDBDelete table predicate = do
-  pool <- asks connPool
-  withResource pool (\conn -> liftIO $ runDelete conn table predicate)
+  pool <- ReaderTrans.asks I.connPool
+  Pool.withResource pool (\conn -> MonadT.liftIO $ O.runDelete conn table predicate)
 

@@ -19,15 +19,8 @@ module Type.StoryTag
   , storyColID
   ) where
 
-import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import Opaleye
-  ( Column
-  , PGInt4
-  , Table(Table)
-  , required
-  , optional
-  , constant
-  )
+import qualified Data.Profunctor.Product.TH as ProductProfunctor
+import qualified Opaleye as O
 
 
 -- Strangely Polymorphic data type (Internal Use)
@@ -42,29 +35,29 @@ data StoryTag' id' tagID storyID =
 
 -- Types that Will be used
 type StoryTag      = StoryTag' Int                     Int             Int
-type StoryTagRead  = StoryTag' (Column PGInt4)         (Column PGInt4) (Column PGInt4)
-type StoryTagWrite = StoryTag' (Maybe (Column PGInt4)) (Column PGInt4) (Column PGInt4)
+type StoryTagRead  = StoryTag' (O.Column O.PGInt4)         (O.Column O.PGInt4) (O.Column O.PGInt4)
+type StoryTagWrite = StoryTag' (Maybe (O.Column O.PGInt4)) (O.Column O.PGInt4) (O.Column O.PGInt4)
 
 
 -- Magic
-$(makeAdaptorAndInstance "pStoryTag" ''StoryTag')
+$(ProductProfunctor.makeAdaptorAndInstance "pStoryTag" ''StoryTag')
 
 -- Opaleye table binding
-storyTagTable :: Table StoryTagWrite StoryTagRead
-storyTagTable = Table "story_tags" $
+storyTagTable :: O.Table StoryTagWrite StoryTagRead
+storyTagTable = O.Table "story_tags" $
   pStoryTag
     StoryTag
-      { _storyTagID = optional "id"
-      , _tagID = required "tag_id"
-      , _storyID = required "story_id"
+      { _storyTagID = O.optional "id"
+      , _tagID      = O.required "tag_id"
+      , _storyID    = O.required "story_id"
       }
 
 
 mkStoryTag :: Int -> Int -> StoryTagWrite
 mkStoryTag tid sid = StoryTag
   { _storyTagID = Nothing
-  , _tagID = constant tid
-  , _storyID = constant sid
+  , _tagID = O.constant tid
+  , _storyID = O.constant sid
   }
 
 tagID :: StoryTag -> Int
@@ -73,8 +66,8 @@ tagID = _tagID
 storyID :: StoryTag -> Int
 storyID = _storyID
 
-tagColID :: StoryTag' a (Column PGInt4) (Column PGInt4) -> Column PGInt4
+tagColID :: StoryTag' a (O.Column O.PGInt4) (O.Column O.PGInt4) -> O.Column O.PGInt4
 tagColID = _tagID
 
-storyColID :: StoryTag' a (Column PGInt4) (Column PGInt4) -> Column PGInt4
+storyColID :: StoryTag' a (O.Column O.PGInt4) (O.Column O.PGInt4) -> O.Column O.PGInt4
 storyColID = _storyID

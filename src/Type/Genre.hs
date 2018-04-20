@@ -9,58 +9,44 @@ module Type.Genre
   , allGenres
   ) where
 
-import GHC.Generics (Generic)
+import qualified GHC.Generics as Generics
 
-import Data.Profunctor.Product.Default (Default(..))
-import Data.Text (Text)
-import Data.Aeson (ToJSON, FromJSON)
-import Database.PostgreSQL.Simple.ToField (ToField, toField)
-import Database.PostgreSQL.Simple.FromField
-  ( FromField
-  , ResultError(..)
-  , fromField
-  , returnError
-  )
-import Opaleye
-  ( Column
-  , Constant(..)
-  , PGText
-  , QueryRunnerColumnDefault
-  , pgStrictText
-  , queryRunnerColumnDefault
-  , fieldQueryRunnerColumn
-  )
+import qualified Data.Aeson as Aeson
+import qualified Data.Text as Text
+import qualified Data.Profunctor.Product.Default as ProductProfunctorDefault
+import qualified Database.PostgreSQL.Simple.ToField as PGSToField
+import qualified Database.PostgreSQL.Simple.FromField as PGSFromField
+import qualified Opaleye as O
 
 
 data Genre
   = Fiction
   | NonFiction
-  deriving (Eq, Show, Generic, Enum, Bounded)
+  deriving (Eq, Show, Generics.Generic, Enum, Bounded)
 
 
 allGenres :: [Genre]
 allGenres = [minBound..]
 
-instance ToJSON Genre
+instance Aeson.ToJSON Genre
+instance Aeson.FromJSON Genre
 
-instance FromJSON Genre
-
-instance FromField Genre where
-  fromField f Nothing = returnError UnexpectedNull f ""
-  fromField _ (Just "FICTION") = pure Fiction
+instance PGSFromField.FromField Genre where
+  fromField f Nothing              = PGSFromField.returnError PGSFromField.UnexpectedNull f ""
+  fromField _ (Just "FICTION")     = pure Fiction
   fromField _ (Just "NON-FICTION") = pure NonFiction
-  fromField _ (Just _) = error "SQL-Haskell-Type-Mismatch: `Genre`"
+  fromField _ (Just _)             = error "SQL-Haskell-Type-Mismatch: `Genre`"
 
-instance ToField Genre where
-  toField Fiction = toField ("FICTION" :: Text)
-  toField NonFiction = toField ("NON-FICTION" :: Text)
+instance PGSToField.ToField Genre where
+  toField Fiction = PGSToField.toField ("FICTION" :: Text.Text)
+  toField NonFiction = PGSToField.toField ("NON-FICTION" :: Text.Text)
 
-instance Default Constant Genre (Column PGText) where
-  def = Constant def'
+instance ProductProfunctorDefault.Default O.Constant Genre (O.Column O.PGText) where
+  def = O.Constant def'
     where
-      def' :: Genre -> Column PGText
-      def' Fiction = pgStrictText "FICTION"
-      def' NonFiction = pgStrictText "NON-FICTION"
+      def' :: Genre -> O.Column O.PGText
+      def' Fiction    = O.pgStrictText "FICTION"
+      def' NonFiction = O.pgStrictText "NON-FICTION"
 
-instance QueryRunnerColumnDefault PGText Genre where
-    queryRunnerColumnDefault = fieldQueryRunnerColumn
+instance O.QueryRunnerColumnDefault O.PGText Genre where
+    queryRunnerColumnDefault = O.fieldQueryRunnerColumn

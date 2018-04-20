@@ -14,100 +14,93 @@ module Controller.Story
   , delete
   ) where
 
-import Control.Monad.Trans (lift)
+import qualified Control.Monad.Trans as MonadT
 
-import Data.List.Split (splitOn)
-import Web.Scotty.Trans
-  ( json
-  , jsonData
-  , rescue
-  , param
-  , params
-  )
+import qualified Web.Scotty.Trans as Scotty
 
-import Type.Story
-import Resource.Story
-import Init (ActionA)
-import Controller.Basic (invalidPayload)
-import Controller.Utils (cursorPagination)
-import Class.Includes
+import qualified Type.Story as TS
+import qualified Resource.Story as RS
+import qualified Init as I
+import qualified Controller.Basic as CB
+import qualified Controller.Utils as CU
+import qualified Class.Includes as CI
 
 
 -- Query Includes Processing
 
 -- CREATE
 
-post :: ActionA
+post :: I.ActionA
 post = do
-  includes <- (fromCSV <$> param "includes") `rescue` (\_ -> return $ Right [])
-  story' :: StoryInsert <- jsonData `rescue` invalidPayload validStoryInsertObject
-  storyResource <- lift $ createStoryResource includes story'
-  either json json storyResource
+  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+  story' :: TS.StoryInsert <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TS.validStoryInsertObject
+  storyResource <- MonadT.lift $ RS.createStoryResource includes story'
+  either Scotty.json Scotty.json storyResource
 
 
-postBatch :: ActionA
+postBatch :: I.ActionA
 postBatch = do
-  includes <- (fromCSV <$> param "includes") `rescue` (\_ -> return $ Right [])
-  stories :: [StoryInsert] <- jsonData `rescue` invalidPayload validStoryInsertObject
-  storyResources <- lift $ createStoryResources includes stories
-  either json json storyResources
+  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+  stories :: [TS.StoryInsert] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TS.validStoryInsertObject
+  storyResources <- MonadT.lift $ RS.createStoryResources includes stories
+  either Scotty.json Scotty.json storyResources
 
 
 -- RETRIVE
 
-getBatch :: ActionA
+getBatch :: I.ActionA
 getBatch = do
-  qparams <- params
-  includes <- (fromCSV <$> param "includes") `rescue` (\_ -> return $ Right [])
-  storyResources <- lift $ getStoryResources (cursorPagination qparams) includes
-  either json json storyResources
+  qparams <- Scotty.params
+  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+  storyResources <- MonadT.lift $ RS.getStoryResources (CU.cursorPagination qparams) includes
+  either Scotty.json Scotty.json storyResources
 
 
-get :: ActionA
+get :: I.ActionA
 get = do
-  storyId' <- param "id"
-  includes <- (fromCSV <$> param "includes") `rescue` (\_ -> return $ Right [])
-  storyResource <- lift $ getStoryResource storyId' includes
-  either json json storyResource
+  storyId' <- Scotty.param "id"
+  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+  storyResource <- MonadT.lift $ RS.getStoryResource storyId' includes
+  either Scotty.json Scotty.json storyResource
 
 
-getRandom :: ActionA
+getRandom :: I.ActionA
 getRandom = do
-  includes <- (fromCSV <$> param "includes") `rescue` (\_ -> return $ Right [])
-  storyResource <- lift $ getRandomStoryResource includes
-  either json json storyResource
+  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+  storyResource <- MonadT.lift $ RS.getRandomStoryResource includes
+  either Scotty.json Scotty.json storyResource
 
 
 -- UPDATE
 
-put :: ActionA
+put :: I.ActionA
 put = do
-  storyId' :: Int <- param "id"
-  story' :: StoryPut <- jsonData `rescue` invalidPayload validStoryPutObject
+  storyId' :: Int <- Scotty.param "id"
+  story' :: TS.StoryPut <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TS.validStoryPutObject
 
-  storyResource <- lift $ updateStoryResource story'
-  either json json storyResource
+  storyResource <- MonadT.lift $ RS.updateStoryResource story'
+  either Scotty.json Scotty.json storyResource
 
 
-putBatch :: ActionA
+putBatch :: I.ActionA
 putBatch = do
-  stories :: [StoryPut] <- jsonData `rescue` invalidPayload validStoryPutObject
-  storyResources <- lift $ updateStoryResources stories
-  json storyResources
+  stories :: [TS.StoryPut] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TS.validStoryPutObject
+  storyResources <- MonadT.lift $ RS.updateStoryResources stories
+  Scotty.json storyResources
 
 
 
 -- DELETE
 
-deleteBatch :: ActionA
+deleteBatch :: I.ActionA
 deleteBatch = do
-  stories :: [Int] <- jsonData `rescue` invalidPayload undefined
-  storyResources <- lift $ deleteStoryResources stories
-  json storyResources
+  stories :: [Int] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload undefined
+  storyResources <- MonadT.lift $ RS.deleteStoryResources stories
+  Scotty.json storyResources
 
 
-delete :: ActionA
+delete :: I.ActionA
 delete = do
-  storyId' <- param "id"
-  storyResource <- lift $ deleteStoryResource storyId'
-  either json json storyResource
+  storyId' <- Scotty.param "id"
+  storyResource <- MonadT.lift $ RS.deleteStoryResource storyId'
+  either Scotty.json Scotty.json storyResource

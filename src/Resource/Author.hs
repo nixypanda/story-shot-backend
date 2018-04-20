@@ -14,119 +14,119 @@ module Resource.Author
   , deleteAuthorResource
   ) where
 
-import Data.Int (Int64)
-import GHC.Generics (Generic)
+import qualified Data.Int as DI
+import qualified GHC.Generics as Generics
 
-import Data.Aeson (ToJSON(..))
+import qualified Data.Aeson as DA
 
-import Init (WithConfig)
-import Type.Author
-import Type.Pagination
-import Type.Doc
-import Type.AppError
-import Storage.Author
+import qualified Init as I
+import qualified Type.Pagination as TP
+import qualified Type.Doc as TD
+import qualified Type.Author as TA
+import qualified Type.AppError as TAe
+import qualified Storage.Author as SA
 
 
 -- CREATE
 
-createAuthorResource :: AuthorInsert -> WithConfig (Document Author)
+createAuthorResource :: TA.AuthorInsert -> I.WithConfig (TD.Document TA.Author)
 createAuthorResource =
-  fmap indexDocument' . createAuthor
+  fmap indexDocument' . SA.createAuthor
 
 
-createAuthorResources :: [AuthorInsert] -> WithConfig (Document Author)
+createAuthorResources :: [TA.AuthorInsert] -> I.WithConfig (TD.Document TA.Author)
 createAuthorResources =
-  fmap docMulti . createAuthors
+  fmap docMulti . SA.createAuthors
 
 
 
 -- RETRIVE
 
-getAuthorResources :: CursorParam -> WithConfig (Document Author)
+getAuthorResources :: TP.CursorParam -> I.WithConfig (TD.Document TA.Author)
 getAuthorResources cur =
-  docMulti <$> getAuthors cur
+  docMulti <$> SA.getAuthors cur
 
 
-getAuthorResource :: Int -> WithConfig (Either (ErrorDocument Author) (Document Author))
+getAuthorResource :: Int -> I.WithConfig (Either (TD.ErrorDocument TA.Author) (TD.Document TA.Author))
 getAuthorResource =
-  fmap docOrError . getAuthor
+  fmap docOrError . SA.getAuthor
 
 
 
 -- UPDATE
 
-updateAuthorResource :: AuthorPut -> WithConfig (Either (ErrorDocument Author) (Document Author))
+updateAuthorResource :: TA.AuthorPut -> I.WithConfig (Either (TD.ErrorDocument TA.Author) (TD.Document TA.Author))
 updateAuthorResource = 
-  fmap docOrError . updateAuthor
+  fmap docOrError . SA.updateAuthor
 
 
-updateAuthorResources :: [AuthorPut] -> WithConfig (Document Author)
+updateAuthorResources :: [TA.AuthorPut] -> I.WithConfig (TD.Document TA.Author)
 updateAuthorResources =
-  fmap docMulti . updateAuthors
+  fmap docMulti . SA.updateAuthors
 
 
 
 -- DELETE
 
-deleteAuthorResource :: Int -> WithConfig (Either (ErrorDocument Author) (Document Author))
-deleteAuthorResource = fmap docMetaOrError . deleteAuthor
+deleteAuthorResource :: Int -> I.WithConfig (Either (TD.ErrorDocument TA.Author) (TD.Document TA.Author))
+deleteAuthorResource = fmap docMetaOrError . SA.deleteAuthor
 
 
-deleteAuthorResources :: [Int] -> WithConfig (Document Author)
-deleteAuthorResources = fmap (docMeta . fromIntegral) . deleteAuthors
+deleteAuthorResources :: [Int] -> I.WithConfig (TD.Document TA.Author)
+deleteAuthorResources = fmap (docMeta . fromIntegral) . SA.deleteAuthors
 
 
 -- HELPERS
 
 -- JSON API Related
 
-data AuthorMetaData
-  = CursorInfo Cursor
+data MetaData
+  = CursorInfo TP.Cursor
   | CountInfo Int
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generics.Generic)
 
-instance MetaObject AuthorMetaData where
+instance TD.MetaObject MetaData where
   typeName (CursorInfo _) = "cursor"
   typeName (CountInfo _) = "count"
 
 
-instance ToJSON AuthorMetaData where
-  toJSON (CursorInfo cur) = toJSON cur
-  toJSON (CountInfo count) = toJSON count
+instance DA.ToJSON MetaData where
+  toJSON (CursorInfo cur) = DA.toJSON cur
+  toJSON (CountInfo count) = DA.toJSON count
 
 
 -- Builds the Meta data for the 'index' action
-indexMetaData :: [Author] -> Meta
-indexMetaData authors = mkMeta (CursorInfo Cursor
-  { next = if null authors then 0 else maximum (fmap authorID authors)
-  , size = length authors
+indexMetaData :: [TA.Author] -> TD.Meta
+indexMetaData authors = TD.mkMeta (CursorInfo TP.Cursor
+  { TP.next = if null authors then 0 else maximum (fmap TA.authorID authors)
+  , TP.size = length authors
   })
 
 
 -- Builds the repsonse Document for the 'index' action
-indexDocument :: [Author] -> Meta -> Document Author
-indexDocument authors meta = mkListDoc authors (Just meta)
+indexDocument :: [TA.Author] -> TD.Meta -> TD.Document TA.Author
+indexDocument authors meta = TD.mkListDoc authors (Just meta)
 
 
-indexDocument' :: Author -> Document Author
-indexDocument' = mkSingleDoc
+indexDocument' :: TA.Author -> TD.Document TA.Author
+indexDocument' = TD.mkSingleDoc
 
 
-docMulti :: [Author] -> Document Author
+docMulti :: [TA.Author] -> TD.Document TA.Author
 docMulti authors =
   indexDocument authors $ indexMetaData authors
 
 
-docMetaOrError :: Int64 -> Either (ErrorDocument Author) (Document Author)
-docMetaOrError 0 = Left $ docError ResourceNotFound
-docMetaOrError 1 = Right $ indexDocument [] $ mkMeta $ CountInfo 1
+docMetaOrError :: DI.Int64 -> Either (TD.ErrorDocument TA.Author) (TD.Document TA.Author)
+docMetaOrError 0 = Left $ TAe.docError TAe.ResourceNotFound
+docMetaOrError 1 = Right $ indexDocument [] $ TD.mkMeta $ CountInfo 1
 docMetaOrError _ = error "Impossible"
 
 
-docMeta :: Int -> Document Author
-docMeta = indexDocument [] . mkMeta . CountInfo
+docMeta :: Int -> TD.Document TA.Author
+docMeta = indexDocument [] . TD.mkMeta . CountInfo
 
 
-docOrError :: Maybe Author -> Either (ErrorDocument a) (Document Author)
-docOrError Nothing = Left $ docError ResourceNotFound
+docOrError :: Maybe TA.Author -> Either (TD.ErrorDocument a) (TD.Document TA.Author)
+docOrError Nothing = Left $ TAe.docError TAe.ResourceNotFound
 docOrError (Just at) = Right $ indexDocument' at

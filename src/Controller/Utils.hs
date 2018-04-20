@@ -6,23 +6,23 @@ module Controller.Utils
   ( cursorPagination
   ) where
 
-import Data.Default (def)
-import Data.Either.Utils (maybeToEither)
-import Data.Text.Lazy (Text)
-import Data.Text.Lazy.Read (decimal)
+import qualified Data.Default as Def
+import qualified Data.Either.Utils as EitherUtils
+import qualified Data.Text.Lazy as LazyText
+import qualified Data.Text.Lazy.Read as LazyTextRead
 
-import Web.Scotty.Trans (Param)
+import qualified Web.Scotty.Trans as Scotty
 
-import Type.Pagination
+import qualified Type.Pagination as TP
 
-cursorPagination :: [Param] -> CursorParam
+cursorPagination :: [Scotty.Param] -> TP.CursorParam
 cursorPagination qparams =
   let
-    getShit :: Text -> Int -> Int
+    getShit :: LazyText.Text -> Int -> Int
     getShit key default' = either (const default') fst $
-      maybeToEither "Nothing" (lookup key qparams) >>= decimal
+      EitherUtils.maybeToEither "Nothing" (lookup key qparams) >>= LazyTextRead.decimal
    in
-  def
-    { nextCursor = getShit "next_cursor" 0
-    , sizeCursor = getShit "size" 10
+  Def.def
+    { TP.nextCursor = getShit "next_cursor" 0
+    , TP.sizeCursor = getShit "size" 10
     }

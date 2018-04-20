@@ -2,19 +2,19 @@
 
 module Utils where
 
-import Data.Maybe (fromMaybe, fromJust)
-import System.Environment (lookupEnv)
-import Text.Read (readMaybe)
+import qualified Data.Maybe as DM (fromMaybe, fromJust)
+import qualified System.Environment as SysEnv
+import qualified Text.Read as TextRead
 
-import Network.URL (URL, importURL)
+import qualified Network.URL as N
 
 
 -- Others
 
-toURL :: String -> URL
-toURL = fromJust . importURL
+toURL :: String -> N.URL
+toURL = DM.fromJust . N.importURL
 
 
 fromMaybeEnv :: (Read a) => a -> String -> IO a
 fromMaybeEnv val =
-  fmap (fromMaybe val . (>>= readMaybe)) . lookupEnv
+  fmap (DM.fromMaybe val . (>>= TextRead.readMaybe)) . SysEnv.lookupEnv

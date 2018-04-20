@@ -1,13 +1,11 @@
 module Class.Includes
   where
 
-import Data.Text (Text)
+import qualified Data.Text as DT
 
-import Type.AppError
-  ( ClientError(..)
-  )
+import qualified Type.AppError as TAe
 
 
 class Includes a where
   getAll :: [a]
-  fromCSV :: Text -> Either ClientError [a]
+  fromCSV :: DT.Text -> Either TAe.ClientError [a]

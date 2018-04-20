@@ -16,99 +16,86 @@ module Storage.Tag
   , deleteTags
   ) where
 
-import Control.Arrow (returnA)
-import Data.Int (Int64)
-import Data.Maybe (listToMaybe, catMaybes)
+import qualified Control.Arrow as Arrow
+import qualified Data.Int as DI
+import qualified Data.Maybe as DM
 
-import Opaleye
-  ( Query
-  , (.==)
-  , (.>)
-  , constant
-  , restrict
-  , queryTable
-  , limit
-  )
+import qualified Opaleye as O
 
-import Type.Tag
-import Type.Pagination
-import Init (WithConfig)
-import Storage.Utils
-  ( runDB
-  , runDBInsertR
-  , runDBUpdateR
-  , runDBDelete
-  )
+import qualified Init as I
+import qualified Type.Pagination as TP
+import qualified Type.Tag as TT
+import qualified Storage.Utils as SU
 
 
 
 -- CREATE
 
-createTag :: TagInsert -> WithConfig Tag
+createTag :: TT.TagInsert -> I.WithConfig TT.Tag
 createTag =
   fmap head . createTags . return
 
 
-createTags :: [TagInsert] -> WithConfig [Tag]
+createTags :: [TT.TagInsert] -> I.WithConfig [TT.Tag]
 createTags tags =
-  runDBInsertR tagTable (map mkTagWrite' tags) id
+  SU.runDBInsertR TT.tagTable (map TT.mkTagWrite' tags) id
 
 
 
 -- RETRIVE
 
-tagQuery :: Query TagRead
-tagQuery = queryTable tagTable
+tagQuery :: O.Query TT.TagRead
+tagQuery = O.queryTable TT.tagTable
 
 
-cursorPaginatedTagQuery :: CursorParam -> Query TagRead
-cursorPaginatedTagQuery CursorParam{..} = limit sizeCursor $ proc () -> do
+cursorPaginatedTagQuery :: TP.CursorParam -> O.Query TT.TagRead
+cursorPaginatedTagQuery TP.CursorParam{..} = O.limit sizeCursor $ proc () -> do
   row <- tagQuery -< ()
-  restrict -< tagColID row .> constant nextCursor
+  O.restrict -< TT.tagColID row O..> O.constant nextCursor
 
-  returnA -< row
+  Arrow.returnA -< row
 
 
-singleTag :: Int -> Query TagRead
+singleTag :: Int -> O.Query TT.TagRead
 singleTag idA = proc () -> do
   row <- tagQuery -< ()
-  restrict -< tagColID row .== constant idA
+  O.restrict -< TT.tagColID row O..== O.constant idA
 
-  returnA -< row
-
-
-getTags :: CursorParam -> WithConfig [Tag]
-getTags = runDB . cursorPaginatedTagQuery
+  Arrow.returnA -< row
 
 
-getTag :: Int -> WithConfig (Maybe Tag)
-getTag = fmap listToMaybe . runDB . singleTag
+getTags :: TP.CursorParam -> I.WithConfig [TT.Tag]
+getTags = SU.runDB . cursorPaginatedTagQuery
+
+
+getTag :: Int -> I.WithConfig (Maybe TT.Tag)
+getTag = fmap DM.listToMaybe . SU.runDB . singleTag
 
 
 -- UPDATE
 
-updateTags :: [TagPut] -> WithConfig [Tag]
+updateTags :: [TT.TagPut] -> I.WithConfig [TT.Tag]
 updateTags =
-  fmap catMaybes . mapM updateTag
+  fmap DM.catMaybes . mapM updateTag
 
 
-updateTag :: TagPut -> WithConfig (Maybe Tag)
+updateTag :: TT.TagPut -> I.WithConfig (Maybe TT.Tag)
 updateTag tag =
   let
-    updateF _ = mkTagWrite tag
-    predicate aRow = tagColID aRow .== constant (tagID tag)
+    updateF _ = TT.mkTagWrite tag
+    predicate aRow = TT.tagColID aRow O..== O.constant (TT.tagID tag)
   in
-    listToMaybe <$> runDBUpdateR tagTable updateF predicate id
+    DM.listToMaybe <$> SU.runDBUpdateR TT.tagTable updateF predicate id
 
 
 
 -- DELETE
 
-deleteTag :: Int -> WithConfig Int64
+deleteTag :: Int -> I.WithConfig DI.Int64
 deleteTag id' =
-  runDBDelete tagTable (\aic -> tagColID aic .== constant id')
+  SU.runDBDelete TT.tagTable (\aic -> TT.tagColID aic O..== O.constant id')
 
 
-deleteTags :: [Int] -> WithConfig Int64
+deleteTags :: [Int] -> I.WithConfig DI.Int64
 deleteTags =
   fmap sum . mapM deleteTag

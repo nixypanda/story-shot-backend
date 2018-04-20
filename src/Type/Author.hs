@@ -28,33 +28,17 @@ module Type.Author
   ) where
 
 import Data.Monoid ((<>))
-import Data.Time (UTCTime)
-import GHC.Generics (Generic)
+import Data.Aeson ((.=), (.:))
 
-import Data.Text (Text, pack)
-import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import Data.Aeson
-  ( ToJSON(..)
-  , FromJSON(..)
-  , Value
-  , object
-  , withObject
-  , (.=)
-  , (.:)
-  )
-import Opaleye
-  ( Column
-  , PGInt4
-  , PGText
-  , Table(Table)
-  , PGTimestamptz
-  , required
-  , optional
-  , constant
-  )
+import qualified Data.Time as DT
+import qualified GHC.Generics as Generics
 
-import Utils (toURL)
-import Class.Versioned
+import qualified Data.Text as Text
+import qualified Data.Profunctor.Product.TH as ProductProfunctor
+import qualified Data.Aeson as Aeson
+import qualified Opaleye as O
+
+import qualified Class.Versioned as CV
 
 
 -- Strangely Polymorphic data type (Internal Use)
@@ -65,49 +49,49 @@ data Author' authorID authorName createdAt updatedAt =
     , _authorName :: authorName
     , _createdAt :: createdAt
     , _updatedAt :: updatedAt
-    } deriving (Eq, Show, Generic)
+    } deriving (Eq, Show, Generics.Generic)
 
 
 -- Types that Will be used
-type Author = Author' Int Text UTCTime UTCTime
+type Author = Author' Int Text.Text DT.UTCTime DT.UTCTime
 type AuthorS = Author' Int () () ()
-type AuthorPut = Author' Int Text () ()
-type AuthorInsert = Author' () Text () ()
+type AuthorPut = Author' Int Text.Text () ()
+type AuthorInsert = Author' () Text.Text () ()
 type AuthorWrite = Author'
-  (Maybe (Column PGInt4))
-  (Column PGText)
-  (Maybe (Column PGTimestamptz))
-  (Maybe (Column PGTimestamptz))
+  (Maybe (O.Column O.PGInt4))
+  (O.Column O.PGText)
+  (Maybe (O.Column O.PGTimestamptz))
+  (Maybe (O.Column O.PGTimestamptz))
 type AuthorRead = Author'
-  (Column PGInt4)
-  (Column PGText)
-  (Column PGTimestamptz)
-  (Column PGTimestamptz)
+  (O.Column O.PGInt4)
+  (O.Column O.PGText)
+  (O.Column O.PGTimestamptz)
+  (O.Column O.PGTimestamptz)
 
 
-instance Versioned Author where
+instance CV.Versioned Author where
   createdAt = _createdAt
   updatedAt = _updatedAt
 
 
 -- Magic
-$(makeAdaptorAndInstance "pAuthor" ''Author')
+$(ProductProfunctor.makeAdaptorAndInstance "pAuthor" ''Author')
 
 -- Opaleye table binding
-authorTable :: Table AuthorWrite AuthorRead
-authorTable = Table "authors" $
+authorTable :: O.Table AuthorWrite AuthorRead
+authorTable = O.Table "authors" $
   pAuthor
     Author
-      { _authorID = optional "id"
-      , _authorName = required "name"
-      , _createdAt = optional "created_at"
-      , _updatedAt = optional "updated_at"
+      { _authorID = O.optional "id"
+      , _authorName = O.required "name"
+      , _createdAt = O.optional "created_at"
+      , _updatedAt = O.optional "updated_at"
       }
 
 
 -- Some Helpers
 
-mkAuthorPut :: Int -> Text -> AuthorPut
+mkAuthorPut :: Int -> Text.Text -> AuthorPut
 mkAuthorPut aid name = Author
   { _authorID = aid
   , _authorName = name
@@ -117,8 +101,8 @@ mkAuthorPut aid name = Author
 
 mkAuthorWrite :: AuthorPut -> AuthorWrite
 mkAuthorWrite Author{..} = Author
-  { _authorID = constant $ Just _authorID
-  , _authorName = constant _authorName
+  { _authorID = O.constant $ Just _authorID
+  , _authorName = O.constant _authorName
   , _createdAt = Nothing
   , _updatedAt = Nothing
   }
@@ -126,7 +110,7 @@ mkAuthorWrite Author{..} = Author
 mkAuthorWrite' :: AuthorInsert -> AuthorWrite
 mkAuthorWrite' Author{..} = Author
   { _authorID = Nothing
-  , _authorName = constant _authorName
+  , _authorName = O.constant _authorName
   , _createdAt = Nothing
   , _updatedAt = Nothing
   }
@@ -142,73 +126,73 @@ mkAuthorS aid = Author
 authorID :: Author' Int b c d -> Int
 authorID = _authorID
 
-authorName :: Author' a Text c d -> Text
+authorName :: Author' a Text.Text c d -> Text.Text
 authorName = _authorName
 
-authorColID :: AuthorRead -> Column PGInt4
+authorColID :: AuthorRead -> O.Column O.PGInt4
 authorColID = _authorID
 
-authorColName :: AuthorRead -> Column PGText
+authorColName :: AuthorRead -> O.Column O.PGText
 authorColName = _authorName
 
 
 -- JSON
 
-instance ToJSON Author where
-  toJSON Author{..} = object
+instance Aeson.ToJSON Author where
+  toJSON Author{..} = Aeson.object
     [ "id" .= _authorID
     , "name" .= _authorName
     , "created-at" .= _createdAt
     , "updated-at" .= _updatedAt
-    , "type" .= ("author" :: Text)
-    , "link" .= ((pack $ "/author/" <> show _authorID) :: Text)
+    , "type" .= ("author" :: Text.Text)
+    , "link" .= ((Text.pack $ "/author/" <> show _authorID) :: Text.Text)
     ]
 
-instance ToJSON AuthorS where
-  toJSON Author{..} = object
+instance Aeson.ToJSON AuthorS where
+  toJSON Author{..} = Aeson.object
     [ "id" .= _authorID
-    , "type" .= ("author" :: Text)
-    , "link" .= ((pack $ "/author/" <> show _authorID) :: Text)
+    , "type" .= ("author" :: Text.Text)
+    , "link" .= ((Text.pack $ "/author/" <> show _authorID) :: Text.Text)
     ]
 
-instance FromJSON AuthorS where
-  parseJSON = withObject "author" $ \o -> Author
+instance Aeson.FromJSON AuthorS where
+  parseJSON = Aeson.withObject "author" $ \o -> Author
     <$> o .: "id"
     <*> pure ()
     <*> pure ()
     <*> pure ()
 
 
-instance FromJSON Author where
-  parseJSON = withObject "author" $ \o -> Author
+instance Aeson.FromJSON Author where
+  parseJSON = Aeson.withObject "author" $ \o -> Author
     <$> o .: "id"
     <*> o .: "name"
     <*> o .: "created-at"
     <*> o .: "updated-at"
 
-instance FromJSON AuthorInsert where
-  parseJSON = withObject "author" $ \o -> Author
+instance Aeson.FromJSON AuthorInsert where
+  parseJSON = Aeson.withObject "author" $ \o -> Author
     <$> pure ()
     <*> o .: "name"
     <*> pure ()
     <*> pure ()
 
 
-validAuthorInsertObject :: Value
-validAuthorInsertObject = object
-  [ "name" .= ("The name you want to give to the author you are creating" :: Text)
+validAuthorInsertObject :: Aeson.Value
+validAuthorInsertObject = Aeson.object
+  [ "name" .= ("The name you want to give to the author you are creating" :: Text.Text)
   ]
 
-instance FromJSON AuthorPut where
-  parseJSON = withObject "author" $ \o -> Author
+instance Aeson.FromJSON AuthorPut where
+  parseJSON = Aeson.withObject "author" $ \o -> Author
     <$> o .: "id"
     <*> o .: "name"
     <*> pure ()
     <*> pure ()
 
 
-validAuthorPutObject :: Value
-validAuthorPutObject = object
-  [ "id" .= ("The id of the author which should be in the DB" :: Text)
-  , "name" .= ("The name you want to give to the author with the above id" :: Text)
+validAuthorPutObject :: Aeson.Value
+validAuthorPutObject = Aeson.object
+  [ "id" .= ("The id of the author which should be in the DB" :: Text.Text)
+  , "name" .= ("The name you want to give to the author with the above id" :: Text.Text)
   ]

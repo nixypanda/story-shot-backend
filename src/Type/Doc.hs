@@ -3,13 +3,16 @@
 module Type.Doc
   where
 
-import GHC.Generics (Generic)
-import Data.Aeson (ToJSON, FromJSON, Object, toJSON, (.=))
-import Data.HashMap.Strict as HM
-import Data.Default
-import Data.Text (Text)
+import Data.Aeson ((.=))
 
-import qualified Data.Aeson as AE
+import qualified GHC.Generics as Generics
+
+import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson as DA
+import qualified Data.Default as Default
+import qualified Data.Text as Text
+
+
 
 
 -- We will say it's a lightweight version of https://github.com/toddmohney/json-api
@@ -35,11 +38,11 @@ Example JSON:
 @
 Specification: <http://jsonapi.org/format/#document-meta>
 -}
-data Meta = Meta Object
-  deriving (Show, Eq, Generic)
+data Meta = Meta DA.Object
+  deriving (Show, Eq, Generics.Generic)
 
-instance ToJSON Meta
-instance FromJSON Meta
+instance DA.ToJSON Meta
+instance DA.FromJSON Meta
 
 instance Monoid Meta where
   mappend (Meta a) (Meta b) = Meta $ HM.union a b
@@ -58,8 +61,8 @@ Example usage:
     typeName _ = "pagination"
 @
 -}
-class (ToJSON a) => MetaObject a where
-  typeName :: a -> Text
+class (DA.ToJSON a) => MetaObject a where
+  typeName :: a -> Text.Text
 
 {- |
 Convienience constructor function for the Meta type
@@ -68,7 +71,7 @@ Example usage:
 See MetaSpec.hs for an example
 -}
 mkMeta :: (MetaObject a) => a -> Meta
-mkMeta obj = Meta $ HM.singleton (typeName obj) (toJSON obj)
+mkMeta obj = Meta $ HM.singleton (typeName obj) (DA.toJSON obj)
 
 
 {- |
@@ -80,16 +83,16 @@ For more information see: <http://jsonapi.org/format/#document-top-level>
 data Document a
   = Singleton a
   | List [a] (Maybe Meta)
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Generics.Generic)
 
 
-instance (ToJSON a) => ToJSON (Document a) where
+instance (DA.ToJSON a) => DA.ToJSON (Document a) where
   toJSON (Singleton res) =
-    AE.object
+    DA.object
     [ "data"  .= res
     ]
   toJSON (List res meta) =
-    AE.object
+    DA.object
     [ "data"  .= res
     , "meta"  .= meta
     ]
@@ -108,21 +111,21 @@ responses.
 Specification: <http://jsonapi.org/format/#error-objects>
 -}
 data Error a =
-  Error { id     :: Maybe Text
-        , status :: Maybe Text
-        , code   :: Maybe Text
-        , title  :: Maybe Text
-        , detail :: Maybe Text
+  Error { id     :: Maybe Text.Text
+        , status :: Maybe Text.Text
+        , code   :: Maybe Text.Text
+        , title  :: Maybe Text.Text
+        , detail :: Maybe Text.Text
         , meta   :: Maybe Meta
         }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Generics.Generic)
 
 
-instance ToJSON a   => ToJSON (Error a)
-instance FromJSON a => FromJSON (Error a)
+instance DA.ToJSON a   => DA.ToJSON (Error a)
+instance DA.FromJSON a => DA.FromJSON (Error a)
 
 
-instance Default (Error a) where
+instance Default.Default (Error a) where
   def = Error
     { Type.Doc.id     = Nothing
     , status = Nothing
@@ -143,11 +146,11 @@ For more information see: <http://jsonapi.org/format/#errors>
 data ErrorDocument a = ErrorDocument
   { _error :: Error a
   , _errorMeta  :: Maybe Meta
-  } deriving (Show, Eq, Generic)
+  } deriving (Show, Eq, Generics.Generic)
 
-instance (ToJSON a) => ToJSON (ErrorDocument a) where
+instance (DA.ToJSON a) => DA.ToJSON (ErrorDocument a) where
   toJSON (ErrorDocument err meta) =
-    AE.object
+    DA.object
     [ "error" .= err
     , "meta"  .= meta
     ]

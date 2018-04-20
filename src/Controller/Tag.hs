@@ -13,86 +13,80 @@ module Controller.Tag
   , delete
   ) where
 
-import Control.Monad.Trans (lift)
-import Web.Scotty.Trans
-  ( json
-  , jsonData
-  , rescue
-  , param
-  , params
-  )
+import qualified Control.Monad.Trans as MonadT
+import qualified Web.Scotty.Trans as Scotty
 
-import Type.Tag
-import Resource.Tag
-import Init (ActionA)
-import Controller.Basic (invalidPayload)
-import Controller.Utils (cursorPagination)
+import qualified Type.Tag as TT
+import qualified Resource.Tag as RT
+import qualified Init as I
+import qualified Controller.Basic as CB
+import qualified Controller.Utils as CU
 
 
 -- CREATE
 
-post :: ActionA
+post :: I.ActionA
 post = do
-  tag' :: TagInsert <- jsonData `rescue` invalidPayload validTagInsertObject
-  tagResource <- lift $ createTagResource tag'
-  json tagResource
+  tag' :: TT.TagInsert <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TT.validTagInsertObject
+  tagResource <- MonadT.lift $ RT.createTagResource tag'
+  Scotty.json tagResource
 
-postBatch :: ActionA
+postBatch :: I.ActionA
 postBatch = do
-  tags :: [TagInsert] <- jsonData `rescue` invalidPayload validTagInsertObject
-  tagResources <- lift $ createTagResources tags
-  json tagResources
+  tags :: [TT.TagInsert] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TT.validTagInsertObject
+  tagResources <- MonadT.lift $ RT.createTagResources tags
+  Scotty.json tagResources
 
 
 -- RETRIVE
 
-getBatch :: ActionA
+getBatch :: I.ActionA
 getBatch = do
-  qparams <- params
-  ar <- lift . getTagResources $ cursorPagination qparams
-  json ar
+  qparams <- Scotty.params
+  ar <- MonadT.lift . RT.getTagResources $ CU.cursorPagination qparams
+  Scotty.json ar
 
 
-get :: ActionA
+get :: I.ActionA
 get = do
-  tagId' <- param "id"
-  tagResource <- lift $ getTagResource tagId'
-  either json json tagResource
+  tagId' <- Scotty.param "id"
+  tagResource <- MonadT.lift $ RT.getTagResource tagId'
+  either Scotty.json Scotty.json tagResource
 
 
 
 -- UPDATE
 
-put :: ActionA
+put :: I.ActionA
 put = do
-  tagId' :: Int <- param "id"
-  tag' :: TagInsert <- jsonData `rescue` invalidPayload validTagInsertObject
+  tagId' :: Int <- Scotty.param "id"
+  tag' :: TT.TagInsert <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TT.validTagInsertObject
   let
-    tag'' = mkTagPut tagId' (tagName tag') (tagGenre tag')
+    tag'' = TT.mkTagPut tagId' (TT.tagName tag') (TT.tagGenre tag')
 
-  tagResource <- lift $ updateTagResource tag''
-  either json json tagResource
+  tagResource <- MonadT.lift $ RT.updateTagResource tag''
+  either Scotty.json Scotty.json tagResource
 
 
-putBatch :: ActionA
+putBatch :: I.ActionA
 putBatch = do
-  tags :: [TagPut] <- jsonData `rescue` invalidPayload validTagPutObject
-  tagResources <- lift $ updateTagResources tags
-  json tagResources
+  tags :: [TT.TagPut] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TT.validTagPutObject
+  tagResources <- MonadT.lift $ RT.updateTagResources tags
+  Scotty.json tagResources
 
 
 
 -- DELETE
 
-deleteBatch :: ActionA
+deleteBatch :: I.ActionA
 deleteBatch = do
-  tags :: [Int] <- jsonData `rescue` invalidPayload undefined
-  tagResources <- lift $ deleteTagResources tags
-  json tagResources
+  tags :: [Int] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload undefined
+  tagResources <- MonadT.lift $ RT.deleteTagResources tags
+  Scotty.json tagResources
 
 
-delete :: ActionA
+delete :: I.ActionA
 delete = do
-  tagId' <- param "id"
-  tagResource <- lift $ deleteTagResource tagId'
-  either json json tagResource
+  tagId' <- Scotty.param "id"
+  tagResource <- MonadT.lift $ RT.deleteTagResource tagId'
+  either Scotty.json Scotty.json tagResource

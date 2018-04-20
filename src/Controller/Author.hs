@@ -13,95 +13,89 @@ module Controller.Author
   , delete
   ) where
 
-import Control.Monad.Trans (lift)
+import qualified Control.Monad.Trans as CMT
 
-import Data.Aeson (Value)
-import Web.Scotty.Trans
-  ( json
-  , jsonData
-  , rescue
-  , param
-  , params
-  )
+import qualified Data.Aeson as DA
+import qualified Web.Scotty.Trans as WST
 
-import Type.Author
-import Resource.Author
-import Init (ActionA)
-import Controller.Basic (invalidPayload)
-import Controller.Utils (cursorPagination)
+import qualified Init as I
+import qualified Type.Author as TA
+import qualified Resource.Author as RA
+import qualified Controller.Basic as CB
+import qualified Controller.Utils as CU
 
 
 -- CREATE
 
-post :: ActionA
+post :: I.ActionA
 post = do
-  author' :: AuthorInsert <- jsonData `rescue` invalidPayload validAuthorInsertObject
-  authorResource <- lift $ createAuthorResource author'
-  json authorResource
+  author' :: TA.AuthorInsert <- WST.jsonData `WST.rescue` CB.invalidPayload TA.validAuthorInsertObject
+  authorResource <- CMT.lift $ RA.createAuthorResource author'
+  WST.json authorResource
 
 
-postBatch :: ActionA
+postBatch :: I.ActionA
 postBatch = do
-  authors :: [AuthorInsert] <- jsonData `rescue` invalidPayload validAuthorInsertObject
-  authorResources <- lift $ createAuthorResources authors
-  json authorResources
+  authors :: [TA.AuthorInsert] <- WST.jsonData `WST.rescue` CB.invalidPayload TA.validAuthorInsertObject
+  authorResources <- CMT.lift $ RA.createAuthorResources authors
+  WST.json authorResources
 
 
 -- RETRIVE
 
-getBatch :: ActionA
+getBatch :: I.ActionA
 getBatch = do
-  qparams <- params
-  ar <- lift . getAuthorResources $ cursorPagination qparams
-  json ar
+  qparams <- WST.params
+  ar <- CMT.lift . RA.getAuthorResources $ CU.cursorPagination qparams
+  WST.json ar
 
 
-get :: ActionA
+get :: I.ActionA
 get = do
-  authorId' <- param "id"
-  authorResource <- lift $ getAuthorResource authorId'
-  either json json authorResource
+  authorId' <- WST.param "id"
+  authorResource <- CMT.lift $ RA.getAuthorResource authorId'
+  either WST.json WST.json authorResource
 
 
 
 -- UPDATE
 
-put :: ActionA
+put :: I.ActionA
 put = do
-  authorId' :: Int <- param "id"
-  author' :: AuthorInsert <- jsonData `rescue` invalidPayload validAuthorInsertObject
+  authorId' :: Int <- WST.param "id"
+  author' :: TA.AuthorInsert <- WST.jsonData `WST.rescue` CB.invalidPayload TA.validAuthorInsertObject
   let
-    author'' = mkAuthorPut authorId' (authorName author')
+    author'' = TA.mkAuthorPut authorId' (TA.authorName author')
 
-  authorResource <- lift $ updateAuthorResource author''
-  either json json authorResource
+  authorResource <- CMT.lift $ RA.updateAuthorResource author''
+  either WST.json WST.json authorResource
 
 
-putBatch :: ActionA
+putBatch :: I.ActionA
 putBatch = do
-  authors :: [AuthorPut] <- jsonData `rescue` invalidPayload validAuthorPutObject
-  authorResources <- lift $ updateAuthorResources authors
-  json authorResources
+  authors :: [TA.AuthorPut] <- WST.jsonData `WST.rescue` CB.invalidPayload TA.validAuthorPutObject
+  authorResources <- CMT.lift $ RA.updateAuthorResources authors
+  WST.json authorResources
 
 
 
 -- DELETE
 
-deleteBatch :: ActionA
+deleteBatch :: I.ActionA
 deleteBatch = do
-  authors :: [Int] <- jsonData `rescue` invalidPayload deleteBatchExample
-  authorResources <- lift $ deleteAuthorResources authors
-  json authorResources
+  authors :: [Int] <- WST.jsonData `WST.rescue` CB.invalidPayload deleteBatchExample
+  authorResources <- CMT.lift $ RA.deleteAuthorResources authors
+  WST.json authorResources
 
 
-delete :: ActionA
+delete :: I.ActionA
 delete = do
-  authorId' <- param "id"
-  authorResource <- lift $ deleteAuthorResource authorId'
-  either json json authorResource
+  authorId' <- WST.param "id"
+  authorResource <- CMT.lift $ RA.deleteAuthorResource authorId'
+  either WST.json WST.json authorResource
 
 
 -- HELPERS
 
-deleteBatchExample :: Value
+deleteBatchExample :: DA.Value
 deleteBatchExample = undefined

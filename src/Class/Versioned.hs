@@ -2,8 +2,8 @@
 
 module Class.Versioned where
 
-import Data.Time (UTCTime)
+import qualified Data.Time as DT
 
 class Versioned a where
-  updatedAt :: a -> UTCTime
-  createdAt :: a -> UTCTime
+  updatedAt :: a -> DT.UTCTime
+  createdAt :: a -> DT.UTCTime

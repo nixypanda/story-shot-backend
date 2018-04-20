@@ -10,60 +10,40 @@ module Controller.Basic
   ) where
 
 
-import Data.Aeson
-  ( Value(..)
-  , object
-  , (.=)
-  )
-import Network.HTTP.Types.Status
-  ( status200
-  , status400
-  , notFound404
-  , status500
-  )
-import Web.Scotty.Trans
-  ( ActionT
-  , finish
-  , json
-  , status
-  , showError
-  )
+import qualified Data.Aeson as DA
+import qualified Network.HTTP.Types.Status as HTTPStatus
+import qualified Web.Scotty.Trans as WST
 
-import Init
-  ( ActionA
-  , Error
-  , Environment(..)
-  , WithConfig
-  )
+import qualified Init as I
 
 
-defaultH :: Environment -> Error -> ActionA
+defaultH :: I.Environment -> I.Error -> I.ActionA
 defaultH env err = do
-  status status500
-  json $ case env of
-       Development -> object ["error" .= showError err]
-       Production -> Null
-       Test -> object ["error" .= showError err]
+  WST.status HTTPStatus.status500
+  WST.json $ case env of
+       I.Development -> DA.object ["error" DA..= WST.showError err]
+       I.Production -> DA.Null
+       I.Test -> DA.object ["error" DA..= WST.showError err]
 
 
-notFoundA :: ActionA
+notFoundA :: I.ActionA
 notFoundA = do
-  status notFound404
-  json $ object ["error" .= String "No rule defined"]
+  WST.status HTTPStatus.notFound404
+  WST.json $ DA.object ["error" DA..= DA.String "No rule defined"]
 
-indexRoute :: ActionA
+indexRoute :: I.ActionA
 indexRoute =
-  json $ object ["app" .= String "Story Shot"]
+  WST.json $ DA.object ["app" DA..= DA.String "Story Shot"]
 
 
-health :: ActionA
+health :: I.ActionA
 health = do
-  status status200
-  finish
+  WST.status HTTPStatus.status200
+  WST.finish
 
 
-invalidPayload :: Value -> a -> ActionT Error WithConfig b
+invalidPayload :: DA.Value -> a -> WST.ActionT I.Error I.WithConfig b
 invalidPayload example _ = do
-  status status400
-  json $ object ["error" .= String "Invalid payload", "schema" .= example]
-  finish
+  WST.status HTTPStatus.status400
+  WST.json $ DA.object ["error" DA..= DA.String "Invalid payload", "schema" DA..= example]
+  WST.finish

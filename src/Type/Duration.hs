@@ -8,59 +8,46 @@ module Type.Duration
   ( Duration(..)
   ) where
 
-import GHC.Generics (Generic)
+import qualified GHC.Generics as Generics
 
-import Data.Aeson (ToJSON, FromJSON)
-import Data.Text (Text)
-import Data.Profunctor.Product.Default (Default(..))
-import Database.PostgreSQL.Simple.ToField (ToField, toField)
-import Database.PostgreSQL.Simple.FromField
-  ( FromField
-  , ResultError(..)
-  , fromField
-  , returnError
-  )
-import Opaleye
-  ( Column
-  , Constant(..)
-  , PGText
-  , QueryRunnerColumnDefault
-  , pgStrictText
-  , queryRunnerColumnDefault
-  , fieldQueryRunnerColumn
-  )
+import qualified Data.Aeson as Aeson
+import qualified Data.Text as Text
+import qualified Data.Profunctor.Product.Default as ProductProfunctorDefault
+import qualified Database.PostgreSQL.Simple.ToField as PGSToField
+import qualified Database.PostgreSQL.Simple.FromField as PGSFromField
+import qualified Opaleye as O
 
 
 data Duration
   = Short
   | Medium
   | Long
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generics.Generic)
 
 
-instance ToJSON Duration
+instance Aeson.ToJSON Duration
+instance Aeson.FromJSON Duration
 
-instance FromJSON Duration
-
-instance FromField Duration where
-  fromField f Nothing = returnError UnexpectedNull f ""
+instance PGSFromField.FromField Duration where
+  fromField f Nothing = PGSFromField.returnError PGSFromField.UnexpectedNull f ""
   fromField _ (Just "SMALL") = pure Short
   fromField _ (Just "MEDIUM") = pure Medium
   fromField _ (Just "LONG") = pure Long
   fromField _ (Just _) = error "SQL-Haskell-Type-Mismatch: `Duration`"
 
-instance ToField Duration where
-  toField Short  = toField ("SMALL"  :: Text)
-  toField Medium = toField ("MEDIUM" :: Text)
-  toField Long   = toField ("LONG"   :: Text)
+instance PGSToField.ToField Duration where
+  toField Short  = PGSToField.toField ("SMALL"  :: Text.Text)
+  toField Medium = PGSToField.toField ("MEDIUM" :: Text.Text)
+  toField Long   = PGSToField.toField ("LONG"   :: Text.Text)
 
-instance Default Constant Duration (Column PGText) where
-  def = Constant def'
+instance ProductProfunctorDefault.Default O.Constant Duration (O.Column O.PGText) where
+  def = O.Constant def'
     where
-      def' :: Duration -> Column PGText
-      def' Short = pgStrictText "SMALL"
-      def' Medium = pgStrictText "MEDIUM"
-      def' Long = pgStrictText "LONG"
+      def' :: Duration -> O.Column O.PGText
+      def' Short  = O.pgStrictText "SMALL"
+      def' Medium = O.pgStrictText "MEDIUM"
+      def' Long   = O.pgStrictText "LONG"
 
-instance QueryRunnerColumnDefault PGText Duration where
-  queryRunnerColumnDefault = fieldQueryRunnerColumn
+instance O.QueryRunnerColumnDefault O.PGText Duration where
+  queryRunnerColumnDefault = O.fieldQueryRunnerColumn
+

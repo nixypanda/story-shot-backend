@@ -11,89 +11,83 @@ module Type.AppError
   , docError
   ) where
 
-import Control.Exception (Exception)
-import Data.Text (pack)
-import Data.Text.Encoding (decodeUtf8)
-import Data.Typeable (Typeable)
+import qualified Control.Exception as Exception
+import qualified Data.Typeable as Typeable
 
-import Database.PostgreSQL.Simple
-  ( SqlError(..)
-  )
-import Network.HTTP.Types.Status
-  ( status400
-  , status404
-  , status500
-  , statusCode
-  )
-import Type.Doc
+import qualified Data.Text as Text
+import qualified Data.Text.Encoding as TextE
+import qualified Database.PostgreSQL.Simple as PGS
+import qualified Network.HTTP.Types.Status as HTTPStatus
+
+import qualified Type.Doc as TD
 
 
 data ClientError
   = ResourceNotFound
   | InvalidQueryParams
-  deriving (Show, Typeable)
+  deriving (Show, Typeable.Typeable)
 
-instance Exception ClientError
+instance Exception.Exception ClientError
 
 data ServerError
   = NoAuthorForStory
-  deriving (Show, Typeable)
+  deriving (Show, Typeable.Typeable)
 
-instance Exception ServerError
+instance Exception.Exception ServerError
 
 -- Exception Typeclass to represent a failing API request
-class (Exception e) => APIError e where
-  toError :: e -> Error a
+class (Exception.Exception e) => APIError e where
+  toError :: e -> TD.Error a
 
 
-instance APIError SqlError where
-  toError :: SqlError -> Error a
-  toError SqlError{..} =
-    Error
-      { Type.Doc.id = Nothing
-      , status = Just . pack . show . statusCode $ status500
-      , code = Just . pack . show $ sqlExecStatus
-      , title = Just . decodeUtf8 $ sqlErrorMsg
-      , detail = Just . decodeUtf8 $ sqlErrorDetail
-      , meta = Nothing
+instance APIError PGS.SqlError where
+  toError :: PGS.SqlError -> TD.Error a
+  toError PGS.SqlError{..} =
+    TD.Error
+      { TD.id = Nothing
+      , TD.status = Just . Text.pack . show . HTTPStatus.statusCode $ HTTPStatus.status500
+      , TD.code = Just . Text.pack . show $ sqlExecStatus
+      , TD.title = Just . TextE.decodeUtf8 $ sqlErrorMsg
+      , TD.detail = Just . TextE.decodeUtf8 $ sqlErrorDetail
+      , TD.meta = Nothing
       }
 
 
 instance APIError ClientError where
-  toError :: ClientError -> Error a
+  toError :: ClientError -> TD.Error a
   toError ResourceNotFound =
-    Error
-      { Type.Doc.id = Nothing
-      , status = Just . pack . show . statusCode $ status404
-      , code = Nothing
-      , title = Just "Resource Not Found"
-      , detail = Just "The requested resource does not exist"
-      , meta = Nothing
+    TD.Error
+      { TD.id = Nothing
+      , TD.status = Just . Text.pack . show . HTTPStatus.statusCode $ HTTPStatus.status404
+      , TD.code = Nothing
+      , TD.title = Just "Resource Not Found"
+      , TD.detail = Just "The requested resource does not exist"
+      , TD.meta = Nothing
       }
   toError InvalidQueryParams =
-    Error
-      { Type.Doc.id = Nothing
-      , status = Just . pack . show . statusCode $ status400
-      , code = Nothing
-      , title = Just "Invalid Query Parameters"
-      , detail = Just "Query Parameters not supported for API request"
-      , meta = Nothing
+    TD.Error
+      { TD.id = Nothing
+      , TD.status = Just . Text.pack . show . HTTPStatus.statusCode $ HTTPStatus.status400
+      , TD.code = Nothing
+      , TD.title = Just "Invalid Query Parameters"
+      , TD.detail = Just "Query Parameters not supported for API request"
+      , TD.meta = Nothing
       }
 
 
 instance APIError ServerError where
-  toError :: ServerError -> Error a
+  toError :: ServerError -> TD.Error a
   toError NoAuthorForStory =
-    Error
-      { Type.Doc.id = Nothing
-      , status = Just . pack . show . statusCode $ status500
-      , code = Nothing
-      , title = Just "Internal Server Error"
-      , detail = Just "No Author is associated with this story"
-      , meta = Nothing
+    TD.Error
+      { TD.id = Nothing
+      , TD.status = Just . Text.pack . show . HTTPStatus.statusCode $ HTTPStatus.status500
+      , TD.code = Nothing
+      , TD.title = Just "Internal Server Error"
+      , TD.detail = Just "No Author is associated with this story"
+      , TD.meta = Nothing
       }
 
 
 -- Error Document JSON Response
-docError :: APIError e => e -> ErrorDocument a
-docError e = ErrorDocument (toError e) Nothing
+docError :: APIError e => e -> TD.ErrorDocument a
+docError e = TD.ErrorDocument (toError e) Nothing
