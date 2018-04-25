@@ -11,11 +11,11 @@ module Storage.Story
   , createStory
   , getStories
   , getStory
+  , getStoryIDs
   , getTagsForStory
   , getTagIDsForStory
   , getTagsForStories
   , getTagIDsForStories
-  , getRandomStory
   , updateStories
   , updateStory
   , deleteStories
@@ -52,16 +52,11 @@ createStories stories = do
 
 
 createStory :: TS.StoryInsert -> I.AppT TS.PGStory
-createStory =
-  fmap head . createStories . return
+createStory = fmap head . createStories . return
 
 
 
 -- RETRIVE
-
-getRandomStory :: I.AppT (Maybe TS.PGStory)
-getRandomStory = DM.listToMaybe <$> SU.runDB randomStory
-
 
 getStory :: Int -> I.AppT (Maybe TS.PGStory)
 getStory = fmap DM.listToMaybe . SU.runDB . singleStory
@@ -69,6 +64,10 @@ getStory = fmap DM.listToMaybe . SU.runDB . singleStory
 
 getStories :: TP.CursorParam -> I.AppT [TS.PGStory]
 getStories cur = SU.runDB (cursorPaginatedStoryQuery cur)
+
+
+getStoryIDs :: I.AppT [Int]
+getStoryIDs = SU.runDB storyIDs
 
 
 getTagIDsForStory :: Int -> I.AppT [Int]
@@ -137,6 +136,12 @@ storyQuery :: O.Query TS.StoryRead
 storyQuery = O.queryTable TS.storyTable
 
 
+storyIDs :: O.Query (O.Column O.PGInt4)
+storyIDs = proc () -> do
+  row <- storyQuery -< ()
+  Arrow.returnA -< TS.storyColID row
+
+
 cursorPaginatedStoryQuery :: TP.CursorParam -> O.Query TS.StoryRead
 cursorPaginatedStoryQuery TP.CursorParam{..} = O.limit sizeCursor $ proc () -> do
   row <- storyQuery -< ()
@@ -146,12 +151,6 @@ cursorPaginatedStoryQuery TP.CursorParam{..} = O.limit sizeCursor $ proc () -> d
 
 storyTagsQuery :: O.Query TSt.StoryTagRead
 storyTagsQuery = O.queryTable TSt.storyTagTable
-
-
--- TODO: How would you do it?
--- HACK: Not Random at the moment
-randomStory :: O.Query TS.StoryRead
-randomStory = O.limit 1 . O.orderBy (O.asc TS.storyColID) $ storyQuery
 
 
 singleStory :: Int -> O.Query TS.StoryRead

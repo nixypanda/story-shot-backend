@@ -16,8 +16,11 @@ module Resource.Story
   ) where
 
 
+import qualified Control.Monad.IO.Class as MIO
 import qualified Data.Map as M
 import qualified Data.Maybe as DM
+
+import qualified Data.Random as Rand
 
 import qualified Init as I
 import qualified Type.Or as Or
@@ -65,10 +68,15 @@ getStoryResource sid (Right includes) = do
 getRandomStoryResource :: Either TAe.ClientError [TS.StoryIncludes] -> I.AppT (TD.MaybeResource TS.Story)
 getRandomStoryResource (Left e) = return $ Left $ TAe.docError e
 getRandomStoryResource (Right includes) = do
-  mstory <- SS.getRandomStory
-  case mstory of
-    Nothing      -> return $ Left $ TAe.docError TAe.ResourceNotFound
-    Just pgStory -> Right . TM.indexDoc' <$> _fromPGStory includes pgStory
+  storyIDs <- SS.getStoryIDs
+  case storyIDs of
+    [] -> return . Left . TAe.docError $ TAe.ResourceNotFound
+    xs -> do
+      randomStoryIndex <- MIO.liftIO $ Rand.sample $ Rand.randomElement xs
+      mstory <- SS.getStory randomStoryIndex
+      case mstory of
+        Nothing      -> return . Left . TAe.docError $ TAe.ResourceNotFound
+        Just pgstory -> Right . TM.indexDoc' <$> _fromPGStory includes pgstory
 
 
 _fromPGStory :: [TS.StoryIncludes] -> TS.PGStory -> I.AppT TS.Story

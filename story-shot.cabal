@@ -59,6 +59,7 @@ library
                      , opaleye
                      , mtl
                      , time
+                     , random-fu
                      , data-default
                      -- The EitherT monad Transformer
                      , either
