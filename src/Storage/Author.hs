@@ -5,6 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 
+
 module Storage.Author
   ( getAuthors
   , getAuthor
@@ -31,23 +32,25 @@ import qualified Init as I
 import qualified Storage.Utils as SU
 
 
+
 -- CREATE
 
-createAuthor :: TA.AuthorInsert -> I.WithConfig TA.Author
+createAuthor :: TA.AuthorInsert -> I.AppT TA.Author
 createAuthor =
   fmap head . createAuthors . return
 
 
-createAuthors :: [TA.AuthorInsert] -> I.WithConfig [TA.Author]
+createAuthors :: [TA.AuthorInsert] -> I.AppT [TA.Author]
 createAuthors authors =
   SU.runDBInsertR TA.authorTable (map TA.mkAuthorWrite' authors) id
 
 
--- RETRIVE
 
+-- RETRIVE
 
 authorQuery :: O.Query TA.AuthorRead
 authorQuery = O.queryTable TA.authorTable
+
 
 multiAuthorQuery :: [Int] -> O.Query TA.AuthorRead
 multiAuthorQuery aids = proc () -> do
@@ -55,11 +58,13 @@ multiAuthorQuery aids = proc () -> do
   O.restrict -< map O.constant aids `O.in_` TA.authorColID row
   Arrow.returnA -< row
 
+
 cursorPaginatedAuthorQuery :: TP.CursorParam -> O.Query TA.AuthorRead
 cursorPaginatedAuthorQuery TP.CursorParam{..} = O.limit sizeCursor $ proc () -> do
   row <- authorQuery -< ()
   O.restrict -< TA.authorColID row O..> O.constant nextCursor
   Arrow.returnA -< row
+
 
 singleAuthor :: Int -> O.Query TA.AuthorRead
 singleAuthor idA = proc () -> do
@@ -67,25 +72,28 @@ singleAuthor idA = proc () -> do
   O.restrict -< TA.authorColID row O..== O.constant idA
   Arrow.returnA -< row
 
-getAuthors :: TP.CursorParam -> I.WithConfig [TA.Author]
+
+getAuthors :: TP.CursorParam -> I.AppT [TA.Author]
 getAuthors = SU.runDB . cursorPaginatedAuthorQuery
 
-getAuthor :: Int -> I.WithConfig (Maybe TA.Author)
+
+getAuthor :: Int -> I.AppT (Maybe TA.Author)
 getAuthor = fmap DM.listToMaybe . SU.runDB . singleAuthor
 
-getMultiAuthors :: [Int] -> I.WithConfig [TA.Author]
+
+getMultiAuthors :: [Int] -> I.AppT [TA.Author]
 getMultiAuthors = SU.runDB . multiAuthorQuery
 
 
 
 -- UPDATE
 
-updateAuthors :: [TA.AuthorPut] -> I.WithConfig [TA.Author]
+updateAuthors :: [TA.AuthorPut] -> I.AppT [TA.Author]
 updateAuthors =
   fmap DM.catMaybes . mapM updateAuthor
 
 
-updateAuthor :: TA.AuthorPut -> I.WithConfig (Maybe TA.Author)
+updateAuthor :: TA.AuthorPut -> I.AppT (Maybe TA.Author)
 updateAuthor author =
   let
     updateF _ = TA.mkAuthorWrite author
@@ -97,11 +105,10 @@ updateAuthor author =
 
 -- DELETE
 
-deleteAuthor :: Int -> I.WithConfig DI.Int64
-deleteAuthor id' =
-  SU.runDBDelete TA.authorTable (\aic -> TA.authorColID aic O..== O.constant id')
+deleteAuthor :: Int -> I.AppT DI.Int64
+deleteAuthor id' = SU.runDBDelete TA.authorTable (\aic -> TA.authorColID aic O..== O.constant id')
 
 
-deleteAuthors :: [Int] -> I.WithConfig DI.Int64
+deleteAuthors :: [Int] -> I.AppT DI.Int64
 deleteAuthors =
   fmap sum . mapM deleteAuthor

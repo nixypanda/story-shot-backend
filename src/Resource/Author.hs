@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
+
 module Resource.Author
   ( getAuthorResources
   , getAuthorResource
@@ -13,6 +14,7 @@ module Resource.Author
   , deleteAuthorResource
   ) where
 
+
 import qualified Init as I
 import qualified Type.Pagination as TP
 import qualified Type.Doc as TD
@@ -21,45 +23,45 @@ import qualified Type.Meta as TM
 import qualified Storage.Author as SA
 
 
+
 -- CREATE
 
-createAuthorResource :: TA.AuthorInsert -> I.WithConfig (TD.Document TA.Author)
-createAuthorResource = fmap TM.indexDocument' . SA.createAuthor
+createAuthorResource :: TA.AuthorInsert -> I.AppT (TD.Doc TA.Author)
+createAuthorResource = fmap TM.indexDoc' . SA.createAuthor
 
 
-createAuthorResources :: [TA.AuthorInsert] -> I.WithConfig (TD.Document TA.Author)
+createAuthorResources :: [TA.AuthorInsert] -> I.AppT (TD.Doc TA.Author)
 createAuthorResources = fmap TM.docMulti . SA.createAuthors
 
 
 
 -- RETRIVE
 
-getAuthorResources :: TP.CursorParam -> I.WithConfig (TD.Document TA.Author)
-getAuthorResources cur =
-  TM.docMulti <$> SA.getAuthors cur
+getAuthorResources :: TP.CursorParam -> I.AppT (TD.Doc TA.Author)
+getAuthorResources = fmap TM.docMulti . SA.getAuthors
 
 
-getAuthorResource :: Int -> I.WithConfig (Either (TD.ErrorDocument TA.Author) (TD.Document TA.Author))
+getAuthorResource :: Int -> I.AppT (TD.MaybeResource TA.Author)
 getAuthorResource = fmap TM.docOrError . SA.getAuthor
 
 
 
 -- UPDATE
 
-updateAuthorResource :: TA.AuthorPut -> I.WithConfig (Either (TD.ErrorDocument TA.Author) (TD.Document TA.Author))
+updateAuthorResource :: TA.AuthorPut -> I.AppT (TD.MaybeResource TA.Author)
 updateAuthorResource = fmap TM.docOrError . SA.updateAuthor
 
 
-updateAuthorResources :: [TA.AuthorPut] -> I.WithConfig (TD.Document TA.Author)
+updateAuthorResources :: [TA.AuthorPut] -> I.AppT (TD.Doc TA.Author)
 updateAuthorResources = fmap TM.docMulti . SA.updateAuthors
 
 
 
 -- DELETE
 
-deleteAuthorResource :: Int -> I.WithConfig (Either (TD.ErrorDocument TA.Author) (TD.Document TA.Author))
+deleteAuthorResource :: Int -> I.AppT (TD.MaybeResource TA.Author)
 deleteAuthorResource = fmap TM.docMetaOrError . SA.deleteAuthor
 
 
-deleteAuthorResources :: [Int] -> I.WithConfig (TD.Document TA.Author)
+deleteAuthorResources :: [Int] -> I.AppT (TD.Doc TA.Author)
 deleteAuthorResources = fmap (TM.docMeta . fromIntegral) . SA.deleteAuthors

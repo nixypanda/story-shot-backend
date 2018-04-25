@@ -8,6 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE InstanceSigs #-}
 
+
 module Type.Story
   ( Story
   , PGStory
@@ -29,6 +30,7 @@ module Type.Story
   , validStoryPutObject
   , validStoryInsertObject
   ) where
+
 
 import Data.Monoid ((<>))
 import Data.Aeson ((.=), (.:))
@@ -52,6 +54,9 @@ import qualified Type.Author as TA
 import qualified Type.AppError as TAe
 
 
+
+-- Ploymorphic Types
+
 data Story' storyID title duration author timesRead stars genre tags story createdAt updatedAt = Story
   { _storyID :: storyID
   , _title :: title
@@ -66,6 +71,7 @@ data Story' storyID title duration author timesRead stars genre tags story creat
   , _updatedAt :: updatedAt
   } deriving (Eq, Show, Generics.Generic)
 
+
 data PGStory' storyID title duration author timesRead stars genre story createdAt updatedAt = PGStory
   { _pgStoryID :: storyID
   , _pgTitle :: title
@@ -78,6 +84,7 @@ data PGStory' storyID title duration author timesRead stars genre story createdA
   , _pgCreatedAt :: createdAt
   , _pgUpdatedAt :: updatedAt
   } deriving (Eq, Show, Generics.Generic)
+
 
 type Story       = Story' Int Text.Text         TD.Duration (TO.Or TA.AuthorS TA.Author) Int         Int         TG.Genre         (TO.Or [TT.TagS] [TT.Tag]) Text.Text         DT.UTCTime DT.UTCTime
 type StoryS      = Story' Int ()           ()       ()                  ()          ()          ()            ()                ()           ()      ()
@@ -115,10 +122,16 @@ instance CR.Resource Story where
   createdAt = _createdAt
   updatedAt = _updatedAt
 
+
+
 -- Magic
+
 $(ProductProfunctor.makeAdaptorAndInstance "pStory" ''PGStory')
 
+
+
 -- Opaleye table binding
+
 storyTable :: O.Table StoryWrite StoryRead
 storyTable = O.Table "stories" $ pStory
   PGStory
@@ -135,6 +148,7 @@ storyTable = O.Table "stories" $ pStory
     }
 
 
+
 -- Some Helpers
 
 durationFromStoryLen :: Text.Text -> TD.Duration
@@ -142,6 +156,7 @@ durationFromStoryLen s
   | Text.length s < 500 = TD.Short
   | Text.length s < 5000 = TD.Medium
   | otherwise = TD.Long
+
 
 mkStoryFromDB :: PGStory -> TO.Or TA.AuthorS TA.Author -> TO.Or [TT.TagS] [TT.Tag] -> Story
 mkStoryFromDB PGStory{..} author' tags' = Story
@@ -158,6 +173,7 @@ mkStoryFromDB PGStory{..} author' tags' = Story
   , _updatedAt = _pgUpdatedAt
   }
 
+
 mkStoryWrite :: StoryInsert -> StoryWrite
 mkStoryWrite Story{..} = PGStory
   { _pgStoryID = Nothing
@@ -171,6 +187,7 @@ mkStoryWrite Story{..} = PGStory
   , _pgCreatedAt = Nothing
   , _pgUpdatedAt = Nothing
   }
+
 
 mkStoryWrite' :: StoryPut -> StoryRead -> StoryWrite
 mkStoryWrite' Story{..} PGStory{..} = PGStory
@@ -186,23 +203,31 @@ mkStoryWrite' Story{..} PGStory{..} = PGStory
   , _pgUpdatedAt = Nothing
   }
 
+
 storyID :: Story' Int b c d e f g h i j k -> Int
 storyID = _storyID
+
 
 tagIDs :: StoryInsert -> [Int]
 tagIDs = _tags
 
+
 pgStoryID :: PGStory' Int b c d e f g h i j -> Int
 pgStoryID = _pgStoryID
+
 
 storyColID :: PGStory' (O.Column O.PGInt4) b c d e f g h i j -> O.Column O.PGInt4
 storyColID = _pgStoryID
 
+
 authorColID :: PGStory' a b c (O.Column O.PGInt4) e f g h i j -> O.Column O.PGInt4
 authorColID = _pgAuthor
 
+
 storyAuthorID :: PGStory -> Int
 storyAuthorID = _pgAuthor
+
+
 
 -- JSON
 
@@ -223,12 +248,14 @@ instance Aeson.ToJSON Story where
     , "link" .= ((Text.pack $ "/story/" <> show _storyID) :: Text.Text)
     ]
 
+
 instance Aeson.ToJSON StoryS where
   toJSON Story{..} = Aeson.object
     [ "id" .= _storyID
     , "type" .= ("story" :: Text.Text)
     , "link" .= ((Text.pack $ "/story/" <> show _storyID) :: Text.Text)
     ]
+
 
 instance Aeson.FromJSON StoryInsert where
   parseJSON = Aeson.withObject "story" $ \o -> Story
@@ -245,15 +272,6 @@ instance Aeson.FromJSON StoryInsert where
       <*> pure ()
 
 
-validStoryInsertObject :: Aeson.Value
-validStoryInsertObject = Aeson.object
-  [ "title" .= ("The title for the new story" :: Text.Text)
-  , "author" .= ("The author-id for the story (Should be in the DB)" :: Text.Text)
-  , "genre" .= ("One of " ++ show TG.allGenres)
-  , "tags" .= ("The list of tag-id's for this story" :: Text.Text)
-  , "story" .= ("The story itself" :: Text.Text)
-  ]
-
 instance Aeson.FromJSON StoryPut where
   parseJSON = Aeson.withObject "story" $ \o -> Story
       <$> o .: "id"
@@ -269,6 +287,19 @@ instance Aeson.FromJSON StoryPut where
       <*> pure ()
 
 
+
+-- Valid Request Hints
+
+validStoryInsertObject :: Aeson.Value
+validStoryInsertObject = Aeson.object
+  [ "title" .= ("The title for the new story" :: Text.Text)
+  , "author" .= ("The author-id for the story (Should be in the DB)" :: Text.Text)
+  , "genre" .= ("One of " ++ show TG.allGenres)
+  , "tags" .= ("The list of tag-id's for this story" :: Text.Text)
+  , "story" .= ("The story itself" :: Text.Text)
+  ]
+
+
 validStoryPutObject :: Aeson.Value
 validStoryPutObject = Aeson.object
   [ "id" .= ("The id of the story which should be in the DB" :: Text.Text)
@@ -282,6 +313,8 @@ validStoryPutObject = Aeson.object
   ]
 
 
+
+-- Query Params Processing
 
 data StoryIncludes
   = IAuthor

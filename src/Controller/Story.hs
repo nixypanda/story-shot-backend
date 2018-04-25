@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+
 module Controller.Story
   ( post
   , postBatch
@@ -13,6 +14,7 @@ module Controller.Story
   , deleteBatch
   , delete
   ) where
+
 
 import qualified Control.Monad.Trans as MonadT
 
@@ -26,7 +28,6 @@ import qualified Controller.Utils as CU
 import qualified Class.Includes as CI
 
 
--- Query Includes Processing
 
 -- CREATE
 
@@ -44,6 +45,7 @@ postBatch = do
   stories :: [TS.StoryInsert] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TS.validStoryInsertObject
   storyResources <- MonadT.lift $ RS.createStoryResources includes stories
   either Scotty.json Scotty.json storyResources
+
 
 
 -- RETRIVE
@@ -69,6 +71,7 @@ getRandom = do
   includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
   storyResource <- MonadT.lift $ RS.getRandomStoryResource includes
   either Scotty.json Scotty.json storyResource
+
 
 
 -- UPDATE

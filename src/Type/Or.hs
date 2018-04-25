@@ -9,6 +9,7 @@ import qualified GHC.Generics as Generics
 
 import qualified Data.Aeson as DA
 
+
 newtype Or a b =
   Or (Either a b)
   deriving (Eq, Show, Functor, Applicative, Monad, Generics.Generic)

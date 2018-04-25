@@ -7,6 +7,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
+
 module Type.Author
   ( Author
   , AuthorInsert
@@ -27,6 +28,7 @@ module Type.Author
   , validAuthorInsertObject
   ) where
 
+
 import Data.Monoid ((<>))
 import Data.Aeson ((.=), (.:))
 
@@ -39,6 +41,7 @@ import qualified Data.Aeson as Aeson
 import qualified Opaleye as O
 
 import qualified Class.Resource as CR
+
 
 
 -- Strangely Polymorphic data type (Internal Use)
@@ -78,6 +81,7 @@ instance CR.Resource Author where
 -- Magic
 $(ProductProfunctor.makeAdaptorAndInstance "pAuthor" ''Author')
 
+
 -- Opaleye table binding
 authorTable :: O.Table AuthorWrite AuthorRead
 authorTable = O.Table "authors" $
@@ -90,6 +94,7 @@ authorTable = O.Table "authors" $
       }
 
 
+
 -- Some Helpers
 
 mkAuthorPut :: Int -> Text.Text -> AuthorPut
@@ -100,6 +105,7 @@ mkAuthorPut aid name = Author
   , _updatedAt = ()
   }
 
+
 mkAuthorWrite :: AuthorPut -> AuthorWrite
 mkAuthorWrite Author{..} = Author
   { _authorID = O.constant $ Just _authorID
@@ -107,6 +113,7 @@ mkAuthorWrite Author{..} = Author
   , _createdAt = Nothing
   , _updatedAt = Nothing
   }
+
 
 mkAuthorWrite' :: AuthorInsert -> AuthorWrite
 mkAuthorWrite' Author{..} = Author
@@ -116,6 +123,7 @@ mkAuthorWrite' Author{..} = Author
   , _updatedAt = Nothing
   }
 
+
 mkAuthorS :: Int -> AuthorS
 mkAuthorS aid = Author
   { _authorID = aid
@@ -124,17 +132,22 @@ mkAuthorS aid = Author
   , _updatedAt = ()
   }
 
+
 authorID :: Author' Int b c d -> Int
 authorID = _authorID
+
 
 authorName :: Author' a Text.Text c d -> Text.Text
 authorName = _authorName
 
+
 authorColID :: AuthorRead -> O.Column O.PGInt4
 authorColID = _authorID
 
+
 authorColName :: AuthorRead -> O.Column O.PGText
 authorColName = _authorName
+
 
 
 -- JSON
@@ -149,12 +162,14 @@ instance Aeson.ToJSON Author where
     , "link" .= ((Text.pack $ "/author/" <> show _authorID) :: Text.Text)
     ]
 
+
 instance Aeson.ToJSON AuthorS where
   toJSON Author{..} = Aeson.object
     [ "id" .= _authorID
     , "type" .= ("author" :: Text.Text)
     , "link" .= ((Text.pack $ "/author/" <> show _authorID) :: Text.Text)
     ]
+
 
 instance Aeson.FromJSON AuthorS where
   parseJSON = Aeson.withObject "author" $ \o -> Author
@@ -171,6 +186,7 @@ instance Aeson.FromJSON Author where
     <*> o .: "created-at"
     <*> o .: "updated-at"
 
+
 instance Aeson.FromJSON AuthorInsert where
   parseJSON = Aeson.withObject "author" $ \o -> Author
     <$> pure ()
@@ -179,17 +195,21 @@ instance Aeson.FromJSON AuthorInsert where
     <*> pure ()
 
 
-validAuthorInsertObject :: Aeson.Value
-validAuthorInsertObject = Aeson.object
-  [ "name" .= ("The name you want to give to the author you are creating" :: Text.Text)
-  ]
-
 instance Aeson.FromJSON AuthorPut where
   parseJSON = Aeson.withObject "author" $ \o -> Author
     <$> o .: "id"
     <*> o .: "name"
     <*> pure ()
     <*> pure ()
+
+
+
+-- Valid Request Hints
+
+validAuthorInsertObject :: Aeson.Value
+validAuthorInsertObject = Aeson.object
+  [ "name" .= ("The name you want to give to the author you are creating" :: Text.Text)
+  ]
 
 
 validAuthorPutObject :: Aeson.Value

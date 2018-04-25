@@ -2,8 +2,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+
 module Type.Meta
   where
+
 
 import qualified GHC.Generics as Generics
 import qualified Data.Int as DInt
@@ -20,6 +22,7 @@ data MetaData
   = CursorInfo TP.Cursor
   | CountInfo Int
   deriving (Eq, Show, Generics.Generic)
+
 
 instance TD.MetaObject MetaData where
   typeName (CursorInfo _) = "cursor"
@@ -39,29 +42,29 @@ indexMetaData resources = TD.mkMeta (CursorInfo TP.Cursor
   })
 
 
--- Builds the repsonse Document for the 'index' action
-indexDocument :: [a] -> TD.Meta -> TD.Document a
-indexDocument authors meta = TD.mkListDoc authors (Just meta)
+-- Builds the repsonse Doc for the 'index' action
+indexDoc :: [a] -> TD.Meta -> TD.Doc a
+indexDoc authors meta = TD.mkListDoc authors (Just meta)
 
 
-indexDocument' :: r -> TD.Document r
-indexDocument' = TD.mkSingleDoc
+indexDoc' :: r -> TD.Doc r
+indexDoc' = TD.mkSingleDoc
 
 
-docMulti :: (CR.Resource r) => [r] -> TD.Document r
-docMulti authors = indexDocument authors $ indexMetaData authors
+docMulti :: (CR.Resource r) => [r] -> TD.Doc r
+docMulti authors = indexDoc authors $ indexMetaData authors
 
 
-docMetaOrError :: (CR.Resource r) => DInt.Int64 -> Either (TD.ErrorDocument r) (TD.Document r)
+docMetaOrError :: (CR.Resource r) => DInt.Int64 -> Either (TD.ErrorDoc r) (TD.Doc r)
 docMetaOrError 0 = Left $ TAe.docError TAe.ResourceNotFound
-docMetaOrError 1 = Right $ indexDocument [] $ TD.mkMeta $ CountInfo 1
+docMetaOrError 1 = Right $ indexDoc [] $ TD.mkMeta $ CountInfo 1
 docMetaOrError _ = error "Impossible"
 
 
-docMeta :: Int -> TD.Document r
-docMeta = indexDocument [] . TD.mkMeta . CountInfo
+docMeta :: Int -> TD.Doc r
+docMeta = indexDoc [] . TD.mkMeta . CountInfo
 
 
-docOrError :: Maybe r -> Either (TD.ErrorDocument r) (TD.Document r)
+docOrError :: Maybe r -> Either (TD.ErrorDoc r) (TD.Doc r)
 docOrError Nothing = Left $ TAe.docError TAe.ResourceNotFound
-docOrError (Just at) = Right $ indexDocument' at
+docOrError (Just at) = Right $ indexDoc' at

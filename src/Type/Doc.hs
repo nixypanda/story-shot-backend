@@ -1,7 +1,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+
+
 module Type.Doc
   where
+
 
 import Data.Aeson ((.=))
 
@@ -14,79 +17,86 @@ import qualified Data.Text as Text
 
 
 
-
 -- We will say it's a lightweight version of https://github.com/toddmohney/json-api
 -- insted of saying this code was ripped from the aforementioned repo. CAPISCE
 
 
--- meta
-{- |
-Type representing a JSON-API meta object.
-Meta is an abstraction around an underlying Map consisting of
-resource-specific metadata.
-Example JSON:
-@
-  "meta": {
-    "copyright": "Copyright 2015 Example Corp.",
-    "authors": [
-      "Andre Dawson",
-      "Kirby Puckett",
-      "Don Mattingly",
-      "Ozzie Guillen"
-    ]
-  }
-@
-Specification: <http://jsonapi.org/format/#document-meta>
+-- META
+
+{-|
+  Type representing a JSON-API meta object.
+  Meta is an abstraction around an underlying Map consisting of
+  resource-specific metadata.
+  Example JSON:
+  @
+    "meta": {
+      "copyright": "Copyright 2015 Example Corp.",
+      "authors": [
+        "Andre Dawson",
+        "Kirby Puckett",
+        "Don Mattingly",
+        "Ozzie Guillen"
+      ]
+    }
+  @
+  Specification: <http://jsonapi.org/format/#document-meta>
 -}
 data Meta = Meta DA.Object
   deriving (Show, Eq, Generics.Generic)
 
+
 instance DA.ToJSON Meta
 instance DA.FromJSON Meta
+
 
 instance Monoid Meta where
   mappend (Meta a) (Meta b) = Meta $ HM.union a b
   mempty = Meta HM.empty
 
-{- |
-Convienience class for constructing a Meta type
-Example usage:
-@
-  data Pagination = Pagination
-    { currentPage :: Int
-    , totalPages :: Int
-    } deriving (Show, Generic)
-  instance ToJSON Pagination
-  instance MetaObject Pagination where
-    typeName _ = "pagination"
-@
+
+
+{-|
+  Convienience class for constructing a Meta type
+  Example usage:
+  @
+    data Pagination = Pagination
+      { currentPage :: Int
+      , totalPages :: Int
+      } deriving (Show, Generic)
+    instance ToJSON Pagination
+    instance MetaObject Pagination where
+      typeName _ = "pagination"
+  @
 -}
 class (DA.ToJSON a) => MetaObject a where
   typeName :: a -> Text.Text
 
-{- |
-Convienience constructor function for the Meta type
-Useful on its own or in combination with Meta's monoid instance
-Example usage:
-See MetaSpec.hs for an example
+
+
+{-|
+  Convienience constructor function for the Meta type
+  Useful on its own or in combination with Meta's monoid instance
+  Example usage:
+  See MetaSpec.hs for an example
 -}
 mkMeta :: (MetaObject a) => a -> Meta
 mkMeta obj = Meta $ HM.singleton (typeName obj) (DA.toJSON obj)
 
 
-{- |
-The 'Resource' type encapsulates the underlying 'Resource'
-Included in the top-level 'Document', the 'Resource' may be either
-a singleton resource or a list.
-For more information see: <http://jsonapi.org/format/#document-top-level>
+
+{-|
+  The 'Resource' type encapsulates the underlying 'Resource'
+  Included in the top-level 'Doc', the 'Resource' may be either
+  a singleton resource or a list.
+  For more information see: <http://jsonapi.org/format/#document-top-level>
 -}
-data Document a
+data Doc a
   = Singleton a
   | List [a] (Maybe Meta)
   deriving (Show, Eq, Generics.Generic)
 
 
-instance (DA.ToJSON a) => DA.ToJSON (Document a) where
+instance (DA.ToJSON a) => DA.ToJSON (Doc a) where
   toJSON (Singleton res) =
     DA.object
     [ "data"  .= res
@@ -97,18 +107,22 @@ instance (DA.ToJSON a) => DA.ToJSON (Document a) where
     , "meta"  .= meta
     ]
 
-mkSingleDoc :: a -> Document a
+
+mkSingleDoc :: a -> Doc a
 mkSingleDoc = Singleton
 
-mkListDoc :: [a] -> Maybe Meta -> Document a
+
+mkListDoc :: [a] -> Maybe Meta -> Doc a
 mkListDoc = List
 
 
+
 -- ERROR
-{- |
-Type for providing application-specific detail to unsuccessful API
-responses.
-Specification: <http://jsonapi.org/format/#error-objects>
+
+{-|
+  Type for providing application-specific detail to unsuccessful API
+  responses.
+  Specification: <http://jsonapi.org/format/#error-objects>
 -}
 data Error a =
   Error { id     :: Maybe Text.Text
@@ -136,21 +150,28 @@ instance Default.Default (Error a) where
     }
 
 
-{- |
-The 'ErrorDocument' type represents the alternative form of the top-level
-JSON-API requirement.
-@error@ attribute - a descriptive object encapsulating application-specific
-error detail.
-For more information see: <http://jsonapi.org/format/#errors>
+{-|
+  The 'ErrorDoc' type represents the alternative form of the top-level
+  JSON-API requirement.
+  @error@ attribute - a descriptive object encapsulating application-specific
+  error detail.
+  For more information see: <http://jsonapi.org/format/#errors>
 -}
-data ErrorDocument a = ErrorDocument
+data ErrorDoc a = ErrorDoc
   { _error :: Error a
   , _errorMeta  :: Maybe Meta
   } deriving (Show, Eq, Generics.Generic)
 
-instance (DA.ToJSON a) => DA.ToJSON (ErrorDocument a) where
-  toJSON (ErrorDocument err meta) =
+
+instance (DA.ToJSON a) => DA.ToJSON (ErrorDoc a) where
+  toJSON (ErrorDoc err meta) =
     DA.object
     [ "error" .= err
     , "meta"  .= meta
     ]
+
+
+-- Aliasing
+
+type MaybeResource a = Either (ErrorDoc a) (Doc a)
+

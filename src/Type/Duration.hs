@@ -4,9 +4,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
+
 module Type.Duration
   ( Duration(..)
   ) where
+
 
 import qualified GHC.Generics as Generics
 
@@ -28,6 +30,7 @@ data Duration
 instance Aeson.ToJSON Duration
 instance Aeson.FromJSON Duration
 
+
 instance PGSFromField.FromField Duration where
   fromField f Nothing = PGSFromField.returnError PGSFromField.UnexpectedNull f ""
   fromField _ (Just "SMALL") = pure Short
@@ -35,10 +38,12 @@ instance PGSFromField.FromField Duration where
   fromField _ (Just "LONG") = pure Long
   fromField _ (Just _) = error "SQL-Haskell-Type-Mismatch: `Duration`"
 
+
 instance PGSToField.ToField Duration where
   toField Short  = PGSToField.toField ("SMALL"  :: Text.Text)
   toField Medium = PGSToField.toField ("MEDIUM" :: Text.Text)
   toField Long   = PGSToField.toField ("LONG"   :: Text.Text)
+
 
 instance ProductProfunctorDefault.Default O.Constant Duration (O.Column O.PGText) where
   def = O.Constant def'
@@ -47,6 +52,7 @@ instance ProductProfunctorDefault.Default O.Constant Duration (O.Column O.PGText
       def' Short  = O.pgStrictText "SMALL"
       def' Medium = O.pgStrictText "MEDIUM"
       def' Long   = O.pgStrictText "LONG"
+
 
 instance O.QueryRunnerColumnDefault O.PGText Duration where
   queryRunnerColumnDefault = O.fieldQueryRunnerColumn

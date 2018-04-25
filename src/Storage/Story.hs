@@ -5,6 +5,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+
 module Storage.Story
   ( createStories
   , createStory
@@ -41,17 +42,16 @@ import qualified Storage.Tag as ST
 
 -- CREATE
 
-createStories :: [TS.StoryInsert] -> I.WithConfig [TS.PGStory]
+createStories :: [TS.StoryInsert] -> I.AppT [TS.PGStory]
 createStories stories = do
   stories' <- SU.runDBInsertR TS.storyTable (map TS.mkStoryWrite stories) id
   let
     storyTags = concat $ zipWith (\sr si -> map (TSt.mkStoryTag $ TS.pgStoryID sr) (TS.tagIDs si)) stories' stories
-
   _ <- SU.runDBInsert TSt.storyTagTable storyTags
   return stories'
 
 
-createStory :: TS.StoryInsert -> I.WithConfig TS.PGStory
+createStory :: TS.StoryInsert -> I.AppT TS.PGStory
 createStory =
   fmap head . createStories . return
 
@@ -59,40 +59,47 @@ createStory =
 
 -- RETRIVE
 
-getRandomStory :: I.WithConfig (Maybe TS.PGStory)
+getRandomStory :: I.AppT (Maybe TS.PGStory)
 getRandomStory = DM.listToMaybe <$> SU.runDB randomStory
 
-getStory :: Int -> I.WithConfig (Maybe TS.PGStory)
+
+getStory :: Int -> I.AppT (Maybe TS.PGStory)
 getStory = fmap DM.listToMaybe . SU.runDB . singleStory
 
-getStories :: TP.CursorParam -> I.WithConfig [TS.PGStory]
+
+getStories :: TP.CursorParam -> I.AppT [TS.PGStory]
 getStories cur = SU.runDB (cursorPaginatedStoryQuery cur)
 
-getTagIDsForStory :: Int -> I.WithConfig [Int]
+
+getTagIDsForStory :: Int -> I.AppT [Int]
 getTagIDsForStory sid = SU.runDB (tagIDsForStory sid)
 
-getTagsForStory :: Int -> I.WithConfig [TT.Tag]
+
+getTagsForStory :: Int -> I.AppT [TT.Tag]
 getTagsForStory sid = SU.runDB (tagsForStory sid) 
+
 
 _toMap :: (Ord a) => [(a, b)] -> M.Map a [b]
 _toMap xs = M.fromListWith (++) [(k, [v]) | (k, v) <- xs]
 
-getTagIDsForStories :: [Int] -> I.WithConfig (M.Map Int [TT.TagS])
+
+getTagIDsForStories :: [Int] -> I.AppT (M.Map Int [TT.TagS])
 getTagIDsForStories sid = fmap (map TT.mkTagS) . _toMap <$> SU.runDB (tagIDsForStories sid)
 
-getTagsForStories :: [Int] -> I.WithConfig (M.Map Int [TT.Tag])
+
+getTagsForStories :: [Int] -> I.AppT (M.Map Int [TT.Tag])
 getTagsForStories sid = _toMap <$> SU.runDB (tagsForStories sid) 
 
 
 
 -- UPDATE
 
-updateStory :: TS.StoryPut -> I.WithConfig (Maybe TS.Story)
+updateStory :: TS.StoryPut -> I.AppT (Maybe TS.Story)
 updateStory = fmap DM.listToMaybe . updateStories . return
 
 
 -- TODO: FIX ME
-updateStories :: [TS.StoryPut] -> I.WithConfig [TS.Story]
+updateStories :: [TS.StoryPut] -> I.AppT [TS.Story]
 updateStories = undefined
   -- let
   --   storyIDs = map TS.storyID stories
@@ -110,17 +117,18 @@ updateStories = undefined
 
 -- DELETE
 
-deleteStory :: Int -> I.WithConfig DI.Int64
+deleteStory :: Int -> I.AppT DI.Int64
 deleteStory = deleteStories . return
 
 
-deleteStories :: [Int] -> I.WithConfig DI.Int64
+deleteStories :: [Int] -> I.AppT DI.Int64
 deleteStories ids =
   let
     storyTagP st = map O.constant ids `O.in_` TSt.storyColID st
     storyP sic = map O.constant ids `O.in_` TS.storyColID sic
   in
     SU.runDBDelete TSt.storyTagTable storyTagP >> SU.runDBDelete TS.storyTable storyP
+
 
 
 -- QUERIES
@@ -133,7 +141,6 @@ cursorPaginatedStoryQuery :: TP.CursorParam -> O.Query TS.StoryRead
 cursorPaginatedStoryQuery TP.CursorParam{..} = O.limit sizeCursor $ proc () -> do
   row <- storyQuery -< ()
   O.restrict -< TS.storyColID row O..> O.constant nextCursor
-
   Arrow.returnA -< row
 
 
@@ -154,6 +161,7 @@ singleStory idA = proc () -> do
   Arrow.returnA -< row
 
 
+
 -- Get TT.Tags
 
 storyTagJoin :: O.QueryArr TT.TagRead (O.Column O.PGInt4)
@@ -162,6 +170,7 @@ storyTagJoin = proc tag -> do
   O.restrict -< TT.tagColID tag O..== TSt.tagColID storyTag
   Arrow.returnA -< TSt.storyColID storyTag
 
+
 tagsForStories :: [Int] -> O.Query (O.Column O.PGInt4, TT.TagRead)
 tagsForStories storyIDs = proc () -> do
   tag <- ST.tagQuery -< ()
@@ -169,17 +178,20 @@ tagsForStories storyIDs = proc () -> do
   O.restrict -< map O.constant storyIDs `O.in_` sid
   Arrow.returnA -< (sid, tag)
 
+
 tagIDsForStories :: [Int] -> O.Query (O.Column O.PGInt4, O.Column O.PGInt4)
 tagIDsForStories storyIDs = proc () -> do
   row <- storyTagsQuery -< ()
   O.restrict -< map O.constant storyIDs `O.in_` TSt.storyColID row
   Arrow.returnA -< (TSt.storyColID row, TSt.tagColID row)
 
+
 tagIDsForStory :: Int -> O.Query (O.Column O.PGInt4)
 tagIDsForStory sid = proc () -> do
   row <- storyTagsQuery -< ()
   O.restrict -< TSt.storyColID row O..== O.constant sid
   Arrow.returnA -< TSt.tagColID row
+
 
 tagsForStory :: Int -> O.Query TT.TagRead
 tagsForStory sid' = proc () -> do

@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+
 module Controller.Tag
   ( post
   , postBatch
@@ -13,7 +14,9 @@ module Controller.Tag
   , delete
   ) where
 
+
 import qualified Control.Monad.Trans as MonadT
+
 import qualified Web.Scotty.Trans as Scotty
 
 import qualified Type.Tag as TT
@@ -21,6 +24,7 @@ import qualified Resource.Tag as RT
 import qualified Init as I
 import qualified Controller.Basic as CB
 import qualified Controller.Utils as CU
+
 
 
 -- CREATE
@@ -36,6 +40,7 @@ postBatch = do
   tags :: [TT.TagInsert] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TT.validTagInsertObject
   tagResources <- MonadT.lift $ RT.createTagResources tags
   Scotty.json tagResources
+
 
 
 -- RETRIVE

@@ -4,10 +4,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
+
 module Type.Genre
   ( Genre(..)
   , allGenres
   ) where
+
 
 import qualified GHC.Generics as Generics
 
@@ -19,6 +21,7 @@ import qualified Database.PostgreSQL.Simple.FromField as PGSFromField
 import qualified Opaleye as O
 
 
+
 data Genre
   = Fiction
   | NonFiction
@@ -28,8 +31,10 @@ data Genre
 allGenres :: [Genre]
 allGenres = [minBound..]
 
+
 instance Aeson.ToJSON Genre
 instance Aeson.FromJSON Genre
+
 
 instance PGSFromField.FromField Genre where
   fromField f Nothing              = PGSFromField.returnError PGSFromField.UnexpectedNull f ""
@@ -37,9 +42,11 @@ instance PGSFromField.FromField Genre where
   fromField _ (Just "NON-FICTION") = pure NonFiction
   fromField _ (Just _)             = error "SQL-Haskell-Type-Mismatch: `Genre`"
 
+
 instance PGSToField.ToField Genre where
   toField Fiction = PGSToField.toField ("FICTION" :: Text.Text)
   toField NonFiction = PGSToField.toField ("NON-FICTION" :: Text.Text)
+
 
 instance ProductProfunctorDefault.Default O.Constant Genre (O.Column O.PGText) where
   def = O.Constant def'
@@ -47,6 +54,7 @@ instance ProductProfunctorDefault.Default O.Constant Genre (O.Column O.PGText) w
       def' :: Genre -> O.Column O.PGText
       def' Fiction    = O.pgStrictText "FICTION"
       def' NonFiction = O.pgStrictText "NON-FICTION"
+
 
 instance O.QueryRunnerColumnDefault O.PGText Genre where
     queryRunnerColumnDefault = O.fieldQueryRunnerColumn

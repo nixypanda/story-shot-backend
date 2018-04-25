@@ -1,4 +1,4 @@
-{-# O.optionS_GHC -Wall #-}
+{-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+
 
 module Type.Tag
   ( Tag
@@ -28,6 +29,7 @@ module Type.Tag
   , validTagPutObject
   ) where
 
+
 import Data.Monoid ((<>))
 import Data.Aeson ((.=), (.:))
 
@@ -43,6 +45,7 @@ import qualified Class.Resource as CR
 import qualified Type.Genre as TG
 
 
+
 -- Strangely Polymorphic data type (Internal Use)
 
 data Tag' id' name genre createdAt updatedAt =
@@ -56,6 +59,7 @@ data Tag' id' name genre createdAt updatedAt =
 
 
 -- Types that Will be used
+
 type Tag = Tag' Int Text.Text TG.Genre DT.UTCTime DT.UTCTime
 type TagS = Tag' Int () () () ()
 type TagPut = Tag' Int Text.Text TG.Genre () ()
@@ -80,10 +84,15 @@ instance CR.Resource Tag where
   updatedAt = _updatedAt
 
 
+
 -- Magic
+
 $(ProductProfunctor.makeAdaptorAndInstance "pTag" ''Tag')
 
+
+
 -- Opaleye table binding
+
 tagTable :: O.Table TagWrite TagRead
 tagTable = O.Table "tags" $
   pTag
@@ -94,6 +103,7 @@ tagTable = O.Table "tags" $
       , _createdAt = O.optional "created_at"
       , _updatedAt = O.optional "updated_at"
       }
+
 
 
 -- Some Helpers
@@ -107,6 +117,7 @@ mkTagPut tid name genre = Tag
   , _updatedAt = ()
   }
 
+
 mkTagS :: Int -> TagS
 mkTagS tid = Tag
   { _tagID = tid
@@ -115,6 +126,7 @@ mkTagS tid = Tag
   , _createdAt = ()
   , _updatedAt = ()
   }
+
 
 mkTagWrite' :: TagInsert -> TagWrite
 mkTagWrite' Tag{..} = Tag
@@ -125,6 +137,7 @@ mkTagWrite' Tag{..} = Tag
   , _updatedAt = Nothing
   }
 
+
 mkTagWrite :: TagPut -> TagWrite
 mkTagWrite Tag{..} = Tag
   { _tagID = O.constant $ Just _tagID
@@ -134,20 +147,26 @@ mkTagWrite Tag{..} = Tag
   , _updatedAt = Nothing
   }
 
+
 tagID :: Tag' Int b c d e -> Int
 tagID = _tagID
+
 
 tagName :: Tag' a Text.Text c d e -> Text.Text
 tagName = _tagName
 
+
 tagGenre :: Tag' a b TG.Genre d e -> TG.Genre
 tagGenre = _tagGenre
+
 
 tagColID :: TagRead -> O.Column O.PGInt4
 tagColID = _tagID
 
+
 tagColName :: TagRead -> O.Column O.PGText
 tagColName = _tagName
+
 
 
 -- JSON
@@ -163,12 +182,14 @@ instance Aeson.ToJSON Tag where
     , "link" .= ((Text.pack $ "/tag/" <> show _tagID) :: Text.Text)
     ]
 
+
 instance Aeson.ToJSON TagS where
   toJSON Tag{..} = Aeson.object
     [ "id" .= _tagID
     , "type" .= ("tag" :: Text.Text)
     , "link" .= ((Text.pack $ "/tag/" <> show _tagID) :: Text.Text)
     ]
+
 
 instance Aeson.FromJSON TagS where
   parseJSON = Aeson.withObject "tag" $ \o -> Tag
@@ -178,6 +199,7 @@ instance Aeson.FromJSON TagS where
     <*> pure ()
     <*> pure ()
 
+
 instance Aeson.FromJSON Tag where
   parseJSON = Aeson.withObject "tag" $ \o -> Tag
     <$> o .: "id"
@@ -185,6 +207,7 @@ instance Aeson.FromJSON Tag where
     <*> o .: "genre"
     <*> o .: "created-at"
     <*> o .: "updated-at"
+
 
 instance Aeson.FromJSON TagInsert where
   parseJSON = Aeson.withObject "tag" $ \o -> Tag
@@ -195,12 +218,6 @@ instance Aeson.FromJSON TagInsert where
     <*> pure ()
 
 
-validTagInsertObject :: Aeson.Value
-validTagInsertObject = Aeson.object
-  [ "name" .= ("The name you want to give to this tag you are creating" :: Text.Text)
-  , "genre" .= ("One of " ++ show TG.allGenres)
-  ]
-
 instance Aeson.FromJSON TagPut where
   parseJSON = Aeson.withObject "tag" $ \o -> Tag
     <$> o .: "id"
@@ -208,6 +225,15 @@ instance Aeson.FromJSON TagPut where
     <*> o .: "genre"
     <*> pure ()
     <*> pure ()
+
+
+-- Valid Request Hints
+
+validTagInsertObject :: Aeson.Value
+validTagInsertObject = Aeson.object
+  [ "name" .= ("The name you want to give to this tag you are creating" :: Text.Text)
+  , "genre" .= ("One of " ++ show TG.allGenres)
+  ]
 
 
 validTagPutObject :: Aeson.Value

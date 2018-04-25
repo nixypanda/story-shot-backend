@@ -4,12 +4,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
+
 module Type.AppError
   ( APIError(..)
   , ClientError(..)
   , ServerError(..)
   , docError
   ) where
+
 
 import qualified Control.Exception as Exception
 import qualified Data.Typeable as Typeable
@@ -29,11 +31,13 @@ data ClientError
 
 instance Exception.Exception ClientError
 
+
 data ServerError
   = NoAuthorForStory
   deriving (Show, Typeable.Typeable)
 
 instance Exception.Exception ServerError
+
 
 -- Exception Typeclass to represent a failing API request
 class (Exception.Exception e) => APIError e where
@@ -88,6 +92,6 @@ instance APIError ServerError where
       }
 
 
--- Error Document JSON Response
-docError :: APIError e => e -> TD.ErrorDocument a
-docError e = TD.ErrorDocument (toError e) Nothing
+-- Error Doc JSON Response
+docError :: APIError e => e -> TD.ErrorDoc a
+docError e = TD.ErrorDoc (toError e) Nothing

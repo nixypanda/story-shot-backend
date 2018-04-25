@@ -2,17 +2,19 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 
+
 module Init
   ( Error
   , ActionA
   , ScottyA
-  , WithConfig
+  , AppT
   , Config(..)
   , E.Environment(..)
   , getConfig
   , loggingM
   , getOptions
   ) where
+
 
 {-
    I had no idea where to shove these functions/types/etc. so here it goes.
@@ -32,12 +34,14 @@ import qualified Web.Scotty.Trans as Scotty
 import qualified Environment as E
 
 
+
 -- TYPES
 
-type WithConfig = ReaderTrans.ReaderT Config IO
-type ActionA    = Scotty.ActionT Error WithConfig ()
-type ScottyA    = Scotty.ScottyT Error WithConfig ()
-type Error      = LazyText.Text
+type AppT    = ReaderTrans.ReaderT Config IO
+type ActionA = Scotty.ActionT Error AppT ()
+type ScottyA = Scotty.ScottyT Error AppT ()
+type Error   = LazyText.Text
+
 
 -- Setup
 

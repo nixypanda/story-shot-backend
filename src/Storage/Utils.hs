@@ -2,7 +2,14 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 
-module Storage.Utils where
+module Storage.Utils
+  ( runDB
+  , runDBInsert
+  , runDBInsertR
+  , runDBUpdateR
+  , runDBDelete
+  ) where
+
 
 import qualified Control.Monad.Trans as MonadT
 import qualified Control.Monad.Trans.Reader as ReaderTrans
@@ -15,9 +22,10 @@ import qualified Opaleye as O
 import qualified Init as I
 
 
+
 runDB :: (PPfDefault.Default O.QueryRunner columns haskells)
       => O.Query columns
-      -> I.WithConfig [haskells]
+      -> I.AppT [haskells]
 runDB q = do
   pool <- ReaderTrans.asks I.connPool
   Pool.withResource pool (\conn -> MonadT.liftIO $ O.runQuery conn q)
@@ -25,7 +33,7 @@ runDB q = do
 
 runDBInsert :: O.Table columnsW columnsR
             -> [columnsW]
-            -> I.WithConfig DI.Int64
+            -> I.AppT DI.Int64
 runDBInsert table rows = do
   pool <- ReaderTrans.asks I.connPool
   Pool.withResource pool (\conn -> MonadT.liftIO $ O.runInsertMany conn table rows)
@@ -35,7 +43,7 @@ runDBInsertR :: PPfDefault.Default O.QueryRunner columnsReturned haskells
              => O.Table columnsW columnsR
              -> [columnsW]
              -> (columnsR -> columnsReturned)
-             -> I.WithConfig [haskells]
+             -> I.AppT [haskells]
 runDBInsertR table rows f = do
   pool <- ReaderTrans.asks I.connPool
   Pool.withResource pool (\conn -> MonadT.liftIO $ O.runInsertManyReturning  conn table rows f)
@@ -46,7 +54,7 @@ runDBUpdateR :: (PPfDefault.Default O.QueryRunner columnsReturned haskells)
              -> (columnsR -> columnsW)
              -> (columnsR -> O.Column O.PGBool)
              -> (columnsR -> columnsReturned)
-             -> I.WithConfig [haskells]
+             -> I.AppT [haskells]
 runDBUpdateR table f p g = do
   pool <- ReaderTrans.asks I.connPool
   Pool.withResource pool (\conn -> MonadT.liftIO $ O.runUpdateReturning conn table f p g)
@@ -54,7 +62,7 @@ runDBUpdateR table f p g = do
 
 runDBDelete :: O.Table a columnsR
             -> (columnsR -> O.Column O.PGBool)
-            -> I.WithConfig DI.Int64
+            -> I.AppT DI.Int64
 runDBDelete table predicate = do
   pool <- ReaderTrans.asks I.connPool
   Pool.withResource pool (\conn -> MonadT.liftIO $ O.runDelete conn table predicate)

@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+
 module Controller.Author
   ( post
   , postBatch
@@ -13,6 +14,7 @@ module Controller.Author
   , delete
   ) where
 
+
 import qualified Control.Monad.Trans as CMT
 
 import qualified Data.Aeson as DA
@@ -23,6 +25,7 @@ import qualified Type.Author as TA
 import qualified Resource.Author as RA
 import qualified Controller.Basic as CB
 import qualified Controller.Utils as CU
+
 
 
 -- CREATE
@@ -39,6 +42,7 @@ postBatch = do
   authors :: [TA.AuthorInsert] <- WST.jsonData `WST.rescue` CB.invalidPayload TA.validAuthorInsertObject
   authorResources <- CMT.lift $ RA.createAuthorResources authors
   WST.json authorResources
+
 
 
 -- RETRIVE
@@ -93,6 +97,7 @@ delete = do
   authorId' <- WST.param "id"
   authorResource <- CMT.lift $ RA.deleteAuthorResource authorId'
   either WST.json WST.json authorResource
+
 
 
 -- HELPERS

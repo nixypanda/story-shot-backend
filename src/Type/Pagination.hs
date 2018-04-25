@@ -1,10 +1,12 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
+
 module Type.Pagination
   ( CursorParam(..)
   , Cursor(..)
   ) where
+
 
 import qualified GHC.Generics as Generics
 
@@ -14,6 +16,7 @@ import qualified Data.Default as Default
 
 
 -- Offset based pagination
+
 data Offset = Offset
   { total :: Int
   , pages :: Int

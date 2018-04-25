@@ -1,6 +1,7 @@
 module Class.Includes
   where
 
+
 import qualified Data.Text as DT
 
 import qualified Type.AppError as TAe

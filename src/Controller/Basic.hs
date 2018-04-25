@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+
 module Controller.Basic
   ( defaultH
   , notFoundA
@@ -31,6 +32,7 @@ notFoundA = do
   WST.status HTTPStatus.notFound404
   WST.json $ DA.object ["error" DA..= DA.String "No rule defined"]
 
+
 indexRoute :: I.ActionA
 indexRoute =
   WST.json $ DA.object ["app" DA..= DA.String "Story Shot"]
@@ -42,7 +44,7 @@ health = do
   WST.finish
 
 
-invalidPayload :: DA.Value -> a -> WST.ActionT I.Error I.WithConfig b
+invalidPayload :: DA.Value -> a -> WST.ActionT I.Error I.AppT b
 invalidPayload example _ = do
   WST.status HTTPStatus.status400
   WST.json $ DA.object ["error" DA..= DA.String "Invalid payload", "schema" DA..= example]
