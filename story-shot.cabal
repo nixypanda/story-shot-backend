@@ -16,8 +16,8 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
-                     , Class.Versioned
                      , Class.Includes
+                     , Class.Resource
 
                      , Init
                      , Environment
@@ -31,6 +31,7 @@ library
                      , Type.Doc
                      , Type.AppError
                      , Type.Or
+                     , Type.Meta
 
                      , Storage.Utils
                      , Storage.Tag

@@ -39,8 +39,8 @@ import qualified Data.Profunctor.Product.TH as ProductProfunctor
 import qualified Data.Aeson as Aeson
 import qualified Opaleye as O
 
+import qualified Class.Resource as CR
 import qualified Type.Genre as TG
-import qualified Class.Versioned as CV
 
 
 -- Strangely Polymorphic data type (Internal Use)
@@ -74,7 +74,8 @@ type TagWrite = Tag'
   (Maybe (O.Column O.PGTimestamptz))
 
 
-instance CV.Versioned Tag where
+instance CR.Resource Tag where
+  identity  = _tagID
   createdAt = _createdAt
   updatedAt = _updatedAt
 

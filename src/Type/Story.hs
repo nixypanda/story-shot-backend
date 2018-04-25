@@ -42,14 +42,14 @@ import qualified Data.Text as Text
 import qualified Data.Aeson as Aeson
 import qualified Opaleye as O
 
+import qualified Class.Includes as CI
+import qualified Class.Resource as CR
 import qualified Type.Or as TO
 import qualified Type.Duration as TD
 import qualified Type.Genre as TG
 import qualified Type.Tag as TT
 import qualified Type.Author as TA
 import qualified Type.AppError as TAe
-import qualified Class.Versioned as CV
-import qualified Class.Includes as CI
 
 
 data Story' storyID title duration author timesRead stars genre tags story createdAt updatedAt = Story
@@ -110,8 +110,8 @@ type StoryWrite = PGStory'
   (Maybe (O.Column O.PGTimestamptz))
 
 
-
-instance CV.Versioned Story where
+instance CR.Resource Story where
+  identity  = _storyID
   createdAt = _createdAt
   updatedAt = _updatedAt
 

@@ -38,7 +38,7 @@ import qualified Data.Profunctor.Product.TH as ProductProfunctor
 import qualified Data.Aeson as Aeson
 import qualified Opaleye as O
 
-import qualified Class.Versioned as CV
+import qualified Class.Resource as CR
 
 
 -- Strangely Polymorphic data type (Internal Use)
@@ -69,7 +69,8 @@ type AuthorRead = Author'
   (O.Column O.PGTimestamptz)
 
 
-instance CV.Versioned Author where
+instance CR.Resource Author where
+  identity = _authorID
   createdAt = _createdAt
   updatedAt = _updatedAt
 

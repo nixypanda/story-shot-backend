@@ -1,6 +1,5 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Resource.Story
@@ -15,12 +14,8 @@ module Resource.Story
   , deleteStoryResource
   ) where
 
-import qualified Data.Int as DI
 import qualified Data.Map as M
 import qualified Data.Maybe as DM
-import qualified GHC.Generics as Generics
-
-import qualified Data.Aeson as DA
 
 import qualified Init as I
 import qualified Type.Or as Or
@@ -30,6 +25,7 @@ import qualified Type.AppError as TAe
 import qualified Type.Story as TS
 import qualified Type.Author as TA
 import qualified Type.Tag as TT
+import qualified Type.Meta as TM
 import qualified Storage.Story as SS
 import qualified Storage.Author as SA
 
@@ -40,16 +36,14 @@ createStoryResource :: Either TAe.ClientError [TS.StoryIncludes]
                     -> TS.StoryInsert
                     -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
 createStoryResource (Left e) _ = return $ Left $ TAe.docError e
-createStoryResource (Right includes) si =
-  SS.createStory si >>= fmap (Right . indexDocument') . _fromPGStory includes
+createStoryResource (Right includes) si = SS.createStory si >>= fmap (Right . TM.indexDocument') . _fromPGStory includes
 
 
 createStoryResources :: Either TAe.ClientError [TS.StoryIncludes]
                      -> [TS.StoryInsert]
                      -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
 createStoryResources (Left e) _ = return $ Left $ TAe.docError e
-createStoryResources (Right includes) sis =
-  SS.createStories sis >>= fmap (Right . docMulti) . _fromPGStories includes
+createStoryResources (Right includes) sis = SS.createStories sis >>= fmap (Right . TM.docMulti) . _fromPGStories includes
 
 
 
@@ -59,8 +53,7 @@ getStoryResources :: TP.CursorParam
                   -> Either TAe.ClientError [TS.StoryIncludes]
                   -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
 getStoryResources _ (Left e) = return $ Left $ TAe.docError e
-getStoryResources cur (Right includes) =
-  SS.getStories cur >>= fmap (Right . docMulti) . _fromPGStories includes
+getStoryResources cur (Right includes) = SS.getStories cur >>= fmap (Right . TM.docMulti) . _fromPGStories includes
 
 
 getStoryResource :: Int
@@ -74,7 +67,7 @@ getStoryResource sid (Right includes) = do
       return $ Left $ TAe.docError TAe.ResourceNotFound
 
     Just pgstory ->
-      Right . indexDocument' <$> _fromPGStory includes pgstory
+      Right . TM.indexDocument' <$> _fromPGStory includes pgstory
 
 
 getRandomStoryResource :: Either TAe.ClientError [TS.StoryIncludes]
@@ -87,7 +80,7 @@ getRandomStoryResource (Right includes) = do
       return $ Left $ TAe.docError TAe.ResourceNotFound
 
     Just pgStory ->
-      Right . indexDocument' <$> _fromPGStory includes pgStory
+      Right . TM.indexDocument' <$> _fromPGStory includes pgStory
 
 
 
@@ -156,12 +149,12 @@ _fromPGStories includes stories = do
 
 updateStoryResource :: TS.StoryPut -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
 updateStoryResource = 
-  fmap docOrError . SS.updateStory
+  fmap TM.docOrError . SS.updateStory
 
 
 updateStoryResources :: [TS.StoryPut] -> I.WithConfig (TD.Document TS.Story)
 updateStoryResources =
-  fmap docMulti . SS.updateStories
+  fmap TM.docMulti . SS.updateStories
 
 
 
@@ -169,66 +162,9 @@ updateStoryResources =
 
 deleteStoryResource :: Int -> I.WithConfig (Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story))
 deleteStoryResource =
-    fmap docMetaOrError . SS.deleteStory
+    fmap TM.docMetaOrError . SS.deleteStory
 
 
 deleteStoryResources :: [Int] -> I.WithConfig (TD.Document TS.Story)
 deleteStoryResources =
-    fmap (docMeta . fromIntegral) . SS.deleteStories
-
-
--- HELPERS
-
-
--- JSON API Related
-
-data StoryMetaData = CursorInfo TP.Cursor | CountInfo Int
-  deriving (Eq, Show, Generics.Generic)
-
-instance TD.MetaObject StoryMetaData where
-  typeName (CursorInfo _) = "cursor"
-  typeName (CountInfo _) = "count"
-
-
-instance DA.ToJSON StoryMetaData where
-  toJSON (CursorInfo cur) = DA.toJSON cur
-  toJSON (CountInfo count) = DA.toJSON count
-
-
--- Builds the Meta data for the 'index' action
-indexMetaData :: [TS.Story] -> TD.Meta
-indexMetaData stories = TD.mkMeta (CursorInfo TP.Cursor
-  { TP.next = if null stories then 0 else maximum (fmap TS.storyID stories)
-  , TP.size = length stories
-  })
-
-
--- Builds the repsonse TD.Document for the 'index' action
-indexDocument :: [TS.Story] -> TD.Meta -> TD.Document TS.Story
-indexDocument stories meta =
-  TD.mkListDoc stories (Just meta)
-
-
-indexDocument' :: TS.Story -> TD.Document TS.Story
-indexDocument' = TD.mkSingleDoc
-
-
-docMulti :: [TS.Story] -> TD.Document TS.Story
-docMulti stories =
-  indexDocument stories $ indexMetaData stories
-
-
-docMetaOrError :: DI.Int64 -> Either (TD.ErrorDocument TS.Story) (TD.Document TS.Story)
-docMetaOrError 0 = Left $ TAe.docError TAe.ResourceNotFound
-docMetaOrError 1 = Right $ indexDocument [] $ TD.mkMeta $ CountInfo 1
-docMetaOrError _ = error "Impossible"
-
-
-docMeta :: Int -> TD.Document TS.Story
-docMeta =
-  indexDocument [] . TD.mkMeta . CountInfo
-
-
-docOrError :: Maybe TS.Story -> Either (TD.ErrorDocument a) (TD.Document TS.Story)
-docOrError Nothing = Left $ TAe.docError TAe.ResourceNotFound
-docOrError (Just at) = Right $ indexDocument' at
+    fmap (TM.docMeta . fromIntegral) . SS.deleteStories
