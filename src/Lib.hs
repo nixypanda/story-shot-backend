@@ -15,6 +15,7 @@ import qualified Web.Scotty.Trans as Scotty
 
 import qualified Controller.Basic as CB
 import qualified Controller.Author as AC
+import qualified Controller.User as UC
 import qualified Controller.Tag as TC
 import qualified Controller.Story as SC
 
@@ -56,6 +57,14 @@ application c = do
   Scotty.put    "/author/:id" AC.put
   Scotty.delete "/author"     AC.deleteBatch
   Scotty.delete "/author/:id" AC.delete
+
+  Scotty.post   "/user"     UC.post
+  Scotty.get    "/user"     UC.getBatch
+  Scotty.get    "/user/:id" UC.get
+  Scotty.put    "/user"     UC.putBatch
+  Scotty.put    "/user/:id" UC.put
+  Scotty.delete "/user"     UC.deleteBatch
+  Scotty.delete "/user/:id" UC.delete
 
   Scotty.notFound CB.notFoundA
 

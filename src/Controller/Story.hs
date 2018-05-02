@@ -78,9 +78,7 @@ getRandom = do
 
 put :: I.ActionA
 put = do
-  -- storyId' :: Int <- Scotty.param "id"
   story' :: TS.StoryPut <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TS.validStoryPutObject
-
   storyResource <- MonadT.lift $ RS.updateStoryResource story'
   either Scotty.json Scotty.json storyResource
 

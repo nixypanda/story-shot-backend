@@ -338,5 +338,3 @@ instance CI.Includes StoryIncludes where
       f (_, ys) = Right ys
    in
       f . DEither.partitionEithers . map fromString . Text.splitOn ","
-
-

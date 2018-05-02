@@ -29,3 +29,4 @@ cursorPagination qparams =
     { TP.nextCursor = getShit "next_cursor" 0
     , TP.sizeCursor = getShit "size" 10
     }
+

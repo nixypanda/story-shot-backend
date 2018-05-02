@@ -17,6 +17,7 @@ module Type.Author
   , AuthorS
   , authorTable
   , mkAuthorS
+  , mkAuthorInsert
   , mkAuthorPut
   , mkAuthorWrite
   , mkAuthorWrite'
@@ -96,6 +97,14 @@ authorTable = O.Table "authors" $
 
 
 -- Some Helpers
+
+mkAuthorInsert :: Text.Text -> AuthorInsert
+mkAuthorInsert name = Author
+  { _authorID = ()
+  , _authorName = name
+  , _createdAt = ()
+  , _updatedAt = ()
+  }
 
 mkAuthorPut :: Int -> Text.Text -> AuthorPut
 mkAuthorPut aid name = Author

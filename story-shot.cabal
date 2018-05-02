@@ -26,6 +26,7 @@ library
                      , Type.Story
                      , Type.Tag
                      , Type.Author
+                     , Type.User
                      , Type.StoryTag
                      , Type.Pagination
                      , Type.Doc
@@ -37,15 +38,18 @@ library
                      , Storage.Tag
                      , Storage.Story
                      , Storage.Author
+                     , Storage.User
 
                      , Resource.Tag
                      , Resource.Story
                      , Resource.Author
+                     , Resource.User
 
                      , Controller.Basic
                      , Controller.Tag
                      , Controller.Story
                      , Controller.Author
+                     , Controller.User
                      , Controller.Utils
 
                      , Utils
