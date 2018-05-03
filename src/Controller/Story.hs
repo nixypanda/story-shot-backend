@@ -23,9 +23,7 @@ import qualified Web.Scotty.Trans as Scotty
 import qualified Type.Story as TS
 import qualified Resource.Story as RS
 import qualified Init as I
-import qualified Controller.Basic as CB
 import qualified Controller.Utils as CU
-import qualified Class.Includes as CI
 
 
 
@@ -33,16 +31,16 @@ import qualified Class.Includes as CI
 
 post :: I.ActionA
 post = do
-  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
-  story' :: TS.StoryInsert <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TS.validStoryInsertObject
+  includes <- CU.extractIncludes
+  story' :: TS.StoryInsert <- CU.extractData TS.validStoryInsertObject
   storyResource <- MonadT.lift $ RS.createStoryResource includes story'
   either Scotty.json Scotty.json storyResource
 
 
 postBatch :: I.ActionA
 postBatch = do
-  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
-  stories :: [TS.StoryInsert] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TS.validStoryInsertObject
+  includes <- CU.extractIncludes
+  stories :: [TS.StoryInsert] <- CU.extractData TS.validStoryInsertObject
   storyResources <- MonadT.lift $ RS.createStoryResources includes stories
   either Scotty.json Scotty.json storyResources
 
@@ -53,7 +51,7 @@ postBatch = do
 getBatch :: I.ActionA
 getBatch = do
   qparams <- Scotty.params
-  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+  includes <- CU.extractIncludes
   storyResources <- MonadT.lift $ RS.getStoryResources (CU.cursorPagination qparams) includes
   either Scotty.json Scotty.json storyResources
 
@@ -61,14 +59,14 @@ getBatch = do
 get :: I.ActionA
 get = do
   storyId' <- Scotty.param "id"
-  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+  includes <- CU.extractIncludes
   storyResource <- MonadT.lift $ RS.getStoryResource storyId' includes
   either Scotty.json Scotty.json storyResource
 
 
 getRandom :: I.ActionA
 getRandom = do
-  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+  includes <- CU.extractIncludes
   storyResource <- MonadT.lift $ RS.getRandomStoryResource includes
   either Scotty.json Scotty.json storyResource
 
@@ -78,14 +76,14 @@ getRandom = do
 
 put :: I.ActionA
 put = do
-  story' :: TS.StoryPut <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TS.validStoryPutObject
+  story' :: TS.StoryPut <- CU.extractData TS.validStoryPutObject
   storyResource <- MonadT.lift $ RS.updateStoryResource story'
   either Scotty.json Scotty.json storyResource
 
 
 putBatch :: I.ActionA
 putBatch = do
-  stories :: [TS.StoryPut] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TS.validStoryPutObject
+  stories :: [TS.StoryPut] <- CU.extractData TS.validStoryPutObject
   storyResources <- MonadT.lift $ RS.updateStoryResources stories
   Scotty.json storyResources
 
@@ -95,7 +93,7 @@ putBatch = do
 
 deleteBatch :: I.ActionA
 deleteBatch = do
-  stories :: [Int] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload undefined
+  stories :: [Int] <- CU.extractData undefined
   storyResources <- MonadT.lift $ RS.deleteStoryResources stories
   Scotty.json storyResources
 

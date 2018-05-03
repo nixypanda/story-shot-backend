@@ -22,7 +22,6 @@ import qualified Web.Scotty.Trans as Scotty
 import qualified Type.Tag as TT
 import qualified Resource.Tag as RT
 import qualified Init as I
-import qualified Controller.Basic as CB
 import qualified Controller.Utils as CU
 
 
@@ -31,13 +30,13 @@ import qualified Controller.Utils as CU
 
 post :: I.ActionA
 post = do
-  tag' :: TT.TagInsert <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TT.validTagInsertObject
+  tag' :: TT.TagInsert <- CU.extractData TT.validTagInsertObject
   tagResource <- MonadT.lift $ RT.createTagResource tag'
   Scotty.json tagResource
 
 postBatch :: I.ActionA
 postBatch = do
-  tags :: [TT.TagInsert] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TT.validTagInsertObject
+  tags :: [TT.TagInsert] <- CU.extractData TT.validTagInsertObject
   tagResources <- MonadT.lift $ RT.createTagResources tags
   Scotty.json tagResources
 
@@ -65,7 +64,7 @@ get = do
 put :: I.ActionA
 put = do
   tagId' :: Int <- Scotty.param "id"
-  tag' :: TT.TagInsert <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TT.validTagInsertObject
+  tag' :: TT.TagInsert <- CU.extractData TT.validTagInsertObject
   let
     tag'' = TT.mkTagPut tagId' (TT.tagName tag') (TT.tagGenre tag')
 
@@ -75,7 +74,7 @@ put = do
 
 putBatch :: I.ActionA
 putBatch = do
-  tags :: [TT.TagPut] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TT.validTagPutObject
+  tags :: [TT.TagPut] <- CU.extractData TT.validTagPutObject
   tagResources <- MonadT.lift $ RT.updateTagResources tags
   Scotty.json tagResources
 
@@ -85,7 +84,7 @@ putBatch = do
 
 deleteBatch :: I.ActionA
 deleteBatch = do
-  tags :: [Int] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload undefined
+  tags :: [Int] <- CU.extractData undefined
   tagResources <- MonadT.lift $ RT.deleteTagResources tags
   Scotty.json tagResources
 

@@ -79,9 +79,10 @@ type TagWrite = Tag'
 
 
 instance CR.Resource Tag where
-  identity  = _tagID
+  rid  = _tagID
   createdAt = _createdAt
   updatedAt = _updatedAt
+  type' _ = "tag"
 
 
 

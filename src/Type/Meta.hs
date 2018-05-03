@@ -37,7 +37,7 @@ instance Aeson.ToJSON MetaData where
 -- Builds the Meta data for the 'index' action
 indexMetaData :: (CR.Resource a) => [a] -> TD.Meta
 indexMetaData resources = TD.mkMeta (CursorInfo TP.Cursor
-  { TP.next = if null resources then 0 else maximum (fmap CR.identity resources)
+  { TP.next = if null resources then 0 else maximum (fmap CR.rid resources)
   , TP.size = length resources
   })
 

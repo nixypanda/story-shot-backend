@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
 
@@ -20,9 +21,11 @@ import qualified Control.Monad.IO.Class as MIO
 import qualified Data.Map as M
 import qualified Data.Maybe as DM
 
+import qualified Data.Text as Text
 import qualified Data.Random as Rand
 
 import qualified Init as I
+import qualified Class.Includes as CI
 import qualified Type.Or as Or
 import qualified Type.Doc as TD
 import qualified Type.Pagination as TP
@@ -33,39 +36,42 @@ import qualified Type.Tag as TT
 import qualified Type.Meta as TM
 import qualified Storage.Story as SS
 import qualified Storage.Author as SA
+import qualified Library.Link as LL
 
 
 
 -- CREATE
 
-createStoryResource :: Either TAe.ClientError [TS.StoryIncludes] -> TS.StoryInsert -> I.AppT (TD.MaybeResource TS.Story)
+createStoryResource :: Either TAe.ClientError [StoryIncludes] -> TS.StoryInsert -> I.AppT (TD.MaybeResource TS.Story)
 createStoryResource (Left e) _ = return . Left $ TAe.docError e
-createStoryResource (Right includes) si = SS.createStory si >>= fmap (Right . TM.indexDoc') . _fromPGStory includes
+createStoryResource (Right includes) si = do
+  pgstory <- SS.createStory si
+  _fromMPGStory includes (Just pgstory)
 
 
-createStoryResources :: Either TAe.ClientError [TS.StoryIncludes] -> [TS.StoryInsert] -> I.AppT (TD.MaybeResource TS.Story)
+createStoryResources :: Either TAe.ClientError [StoryIncludes] -> [TS.StoryInsert] -> I.AppT (TD.MaybeResource TS.Story)
 createStoryResources (Left e) _ = return . Left $ TAe.docError e
-createStoryResources (Right includes) sis = SS.createStories sis >>= fmap (Right . TM.docMulti) . _fromPGStories includes
+createStoryResources (Right includes) sis =
+  SS.createStories sis >>= fmap (Right . TM.docMulti) . _fromPGStories includes
 
 
 
 -- RETRIVE
 
-getStoryResources :: TP.CursorParam -> Either TAe.ClientError [TS.StoryIncludes] -> I.AppT (TD.MaybeResource TS.Story)
+getStoryResources :: TP.CursorParam -> Either TAe.ClientError [StoryIncludes] -> I.AppT (TD.MaybeResource TS.Story)
 getStoryResources _ (Left e) = return . Left $ TAe.docError e
-getStoryResources cur (Right includes) = SS.getStories cur >>= fmap (Right . TM.docMulti) . _fromPGStories includes
+getStoryResources cur (Right includes) =
+  SS.getStories cur >>= fmap (Right . TM.docMulti) . _fromPGStories includes
 
 
-getStoryResource :: Int -> Either TAe.ClientError [TS.StoryIncludes] -> I.AppT (TD.MaybeResource TS.Story)
+getStoryResource :: Int -> Either TAe.ClientError [StoryIncludes] -> I.AppT (TD.MaybeResource TS.Story)
 getStoryResource _ (Left e) = return $ Left $ TAe.docError e
 getStoryResource sid (Right includes) = do
   mstory <- SS.getStory sid
-  case mstory of
-    Nothing      -> return $ Left $ TAe.docError TAe.ResourceNotFound
-    Just pgstory -> Right . TM.indexDoc' <$> _fromPGStory includes pgstory
+  _fromMPGStory includes mstory
 
 
-getRandomStoryResource :: Either TAe.ClientError [TS.StoryIncludes] -> I.AppT (TD.MaybeResource TS.Story)
+getRandomStoryResource :: Either TAe.ClientError [StoryIncludes] -> I.AppT (TD.MaybeResource TS.Story)
 getRandomStoryResource (Left e) = return $ Left $ TAe.docError e
 getRandomStoryResource (Right includes) = do
   storyIDs <- SS.getStoryIDs
@@ -74,67 +80,43 @@ getRandomStoryResource (Right includes) = do
     xs -> do
       randomStoryIndex <- MIO.liftIO $ Rand.sample $ Rand.randomElement xs
       mstory <- SS.getStory randomStoryIndex
-      case mstory of
-        Nothing      -> return . Left . TAe.docError $ TAe.ResourceNotFound
-        Just pgstory -> Right . TM.indexDoc' <$> _fromPGStory includes pgstory
+      _fromMPGStory includes mstory
 
 
-_fromPGStory :: [TS.StoryIncludes] -> TS.PGStory -> I.AppT TS.Story
-_fromPGStory includes pgstory = do
-  let
-    sid = TS.pgStoryID pgstory
-    aid = TS.storyAuthorID pgstory
-  eauthor <- if TS.IAuthor `elem` includes
-                then do
-                  mauthor <- SA.getAuthor aid
-                  case mauthor of
-                    Nothing     -> error $ "An author should exist with ID: " ++ show aid
-                    Just author -> return . Or.Or $ Right author
-                else return . Or.Or . Left $ TA.mkAuthorS aid
-  etags <- if TS.ITags `elem` includes
-              then (Or.Or . Right) <$> SS.getTagsForStory sid
-              else (Or.Or . Left . map TT.mkTagS) <$> SS.getTagIDsForStory sid
-  return $ TS.mkStoryFromDB pgstory eauthor etags
+_fromMPGStory :: [StoryIncludes] -> Maybe TS.PGStory -> I.AppT (TD.MaybeResource TS.Story)
+_fromMPGStory includes mstory =
+  case mstory of
+    Nothing      -> return . Left . TAe.docError $ TAe.ResourceNotFound
+    Just pgstory -> do
+      mlstory <- _fromPGStory includes pgstory
+      case mlstory of
+        Nothing -> return $ Left $ TAe.docError TAe.ResourceNotFound
+        Just lstory -> return $ Right $ TM.indexDoc' lstory
 
 
-_linkAll :: [TS.PGStory] -> Either (M.Map Int TA.AuthorS) (M.Map Int TA.Author) -> Either (M.Map Int [TT.TagS]) (M.Map Int [TT.Tag]) -> [TS.Story]
-_linkAll stories idAuthorMap idTagMap =
-  let
-    _convert :: Either (M.Map k a) (M.Map k b) -> M.Map k (Or.Or a b)
-    _convert (Left m) = fmap (Or.Or . Left) m
-    _convert (Right m) = fmap (Or.Or . Right) m
-
-    getTagsFor :: Int -> Or.Or [TT.TagS] [TT.Tag]
-    getTagsFor pid = DM.fromMaybe (Or.Or $ Left []) . M.lookup pid $ _convert idTagMap
-
-    getAuthorFor :: Int -> Or.Or TA.AuthorS TA.Author
-    getAuthorFor pid = DM.fromJust $ M.lookup pid $ _convert idAuthorMap
-
-    getStory' sg = TS.mkStoryFromDB sg (getAuthorFor pid) (getTagsFor pid)
-      where pid = TS.pgStoryID sg
-  in
-    map getStory' stories
+_fromPGStory :: [StoryIncludes] -> TS.PGStory -> I.AppT (Maybe TS.Story)
+_fromPGStory includes pgstory =
+  LL.fromPG
+    TS.mkLinkedStoryResource
+    [(IAuthor, SA.getAuthor, TA.mkAuthorS, TS.storyAuthorID pgstory)]
+    [(ITags, SS.getTagsForStory, SS.getTagIDsForStory, TT.mkTagS, TS.pgStoryID pgstory)]
+    includes
+    pgstory
 
 
-_fromPGStories :: [TS.StoryIncludes] -> [TS.PGStory] -> I.AppT [TS.Story]
-_fromPGStories includes stories = do
+_fromPGStories :: [StoryIncludes] -> [TS.PGStory] -> I.AppT [TS.Story]
+_fromPGStories includes stories =
   let
     storyIDs = map TS.pgStoryID stories
     authorIDs = map TS.storyAuthorID stories
     storyAuthorIDMap = M.fromList $ zip storyIDs authorIDs
-
-  storyTagMap <- if TS.ITags `elem` includes
-                    then Right <$> SS.getTagsForStories storyIDs
-                    else Left <$> SS.getTagIDsForStories storyIDs
-  authorsMap <- if TS.IAuthor `elem` includes
-                   then do
-                     authors <- SA.getMultiAuthors authorIDs
-                     let
-                       authorIDToAuthorMap = M.fromList [(TA.authorID a, a) | a <- authors]
-                     return . Right $ fmap (authorIDToAuthorMap M.!) storyAuthorIDMap
-                   else return . Left $ fmap TA.mkAuthorS storyAuthorIDMap
-
-  return $ _linkAll stories authorsMap storyTagMap
+  in
+    LL.fromPGs
+      TS.mkLinkedStoryResource
+      [(IAuthor, SA.getMultiAuthors, TA.mkAuthorS, storyAuthorIDMap)]
+      [(ITags, SS.getTagsForStories, SS.getTagIDsForStories, fmap TS.pgStoryID stories)]
+      includes
+      stories
 
 
 
@@ -157,3 +139,22 @@ deleteStoryResource = fmap TM.docMetaOrError . SS.deleteStory
 
 deleteStoryResources :: [Int] -> I.AppT (TD.Doc TS.Story)
 deleteStoryResources = fmap (TM.docMeta . fromIntegral) . SS.deleteStories
+
+
+-- Query Params Processing
+
+data StoryIncludes
+  = IAuthor
+  | ITags
+  deriving (Show, Eq)
+
+
+instance CI.Includes StoryIncludes where
+  getAll = [IAuthor, ITags]
+  singles = [IAuthor]
+  multiples = [ITags]
+
+  fromString :: Text.Text -> Either TAe.ClientError StoryIncludes
+  fromString "author" = Right IAuthor
+  fromString "tag" = Right ITags
+  fromString _ = Left TAe.InvalidQueryParams

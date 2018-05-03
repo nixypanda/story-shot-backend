@@ -23,7 +23,6 @@ import qualified Web.Scotty.Trans as WST
 import qualified Init as I
 import qualified Type.Author as TA
 import qualified Resource.Author as RA
-import qualified Controller.Basic as CB
 import qualified Controller.Utils as CU
 
 
@@ -32,14 +31,14 @@ import qualified Controller.Utils as CU
 
 post :: I.ActionA
 post = do
-  author' :: TA.AuthorInsert <- WST.jsonData `WST.rescue` CB.invalidPayload TA.validAuthorInsertObject
+  author' :: TA.AuthorInsert <- CU.extractData TA.validAuthorInsertObject
   authorResource <- CMT.lift $ RA.createAuthorResource author'
   WST.json authorResource
 
 
 postBatch :: I.ActionA
 postBatch = do
-  authors :: [TA.AuthorInsert] <- WST.jsonData `WST.rescue` CB.invalidPayload TA.validAuthorInsertObject
+  authors :: [TA.AuthorInsert] <- CU.extractData TA.validAuthorInsertObject
   authorResources <- CMT.lift $ RA.createAuthorResources authors
   WST.json authorResources
 
@@ -67,7 +66,7 @@ get = do
 put :: I.ActionA
 put = do
   authorId' :: Int <- WST.param "id"
-  author' :: TA.AuthorInsert <- WST.jsonData `WST.rescue` CB.invalidPayload TA.validAuthorInsertObject
+  author' :: TA.AuthorInsert <- CU.extractData TA.validAuthorInsertObject
   let
     author'' = TA.mkAuthorPut authorId' (TA.authorName author')
 
@@ -77,7 +76,7 @@ put = do
 
 putBatch :: I.ActionA
 putBatch = do
-  authors :: [TA.AuthorPut] <- WST.jsonData `WST.rescue` CB.invalidPayload TA.validAuthorPutObject
+  authors :: [TA.AuthorPut] <- CU.extractData TA.validAuthorPutObject
   authorResources <- CMT.lift $ RA.updateAuthorResources authors
   WST.json authorResources
 
@@ -87,7 +86,7 @@ putBatch = do
 
 deleteBatch :: I.ActionA
 deleteBatch = do
-  authors :: [Int] <- WST.jsonData `WST.rescue` CB.invalidPayload deleteBatchExample
+  authors :: [Int] <- CU.extractData deleteBatchExample
   authorResources <- CMT.lift $ RA.deleteAuthorResources authors
   WST.json authorResources
 

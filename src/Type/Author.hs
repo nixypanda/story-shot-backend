@@ -74,9 +74,14 @@ type AuthorRead = Author'
 
 
 instance CR.Resource Author where
-  identity = _authorID
+  rid = _authorID
+  type' _ = "author"
   createdAt = _createdAt
   updatedAt = _updatedAt
+
+instance CR.ShortResource AuthorS where
+  srid = _authorID
+  srType' _ = "author"
 
 
 -- Magic

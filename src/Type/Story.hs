@@ -16,13 +16,13 @@ module Type.Story
   , StoryPut
   , StoryWrite
   , StoryRead
-  , StoryIncludes(..)
   , pgStoryID
   , storyAuthorID
   , storyTable
   , mkStoryWrite
   , mkStoryWrite'
   , mkStoryFromDB
+  , mkLinkedStoryResource
   , storyID
   , storyColID
   , tagIDs
@@ -37,14 +37,12 @@ import Data.Aeson ((.=), (.:))
 
 import qualified Data.Time as DT
 import qualified GHC.Generics as Generics
-import qualified Data.Either as DEither
 
 import qualified Data.Profunctor.Product.TH as ProductProfunctor
 import qualified Data.Text as Text
 import qualified Data.Aeson as Aeson
 import qualified Opaleye as O
 
-import qualified Class.Includes as CI
 import qualified Class.Resource as CR
 import qualified Type.Or as TO
 import qualified Type.Duration as TD
@@ -118,10 +116,14 @@ type StoryWrite = PGStory'
 
 
 instance CR.Resource Story where
-  identity  = _storyID
+  rid  = _storyID
+  type' _ = "story"
   createdAt = _createdAt
   updatedAt = _updatedAt
 
+
+instance CR.UnlinkedResource PGStory where
+  urid = _pgStoryID
 
 
 -- Magic
@@ -172,6 +174,22 @@ mkStoryFromDB PGStory{..} author' tags' = Story
   , _createdAt = _pgCreatedAt
   , _updatedAt = _pgUpdatedAt
   }
+
+mkLinkedStoryResource :: PGStory -> [TO.Or TA.AuthorS TA.Author] -> [TO.Or [TT.TagS] [TT.Tag]] -> Story
+mkLinkedStoryResource PGStory{..} [author'] [tags'] = Story
+  { _storyID = _pgStoryID
+  , _title = _pgTitle
+  , _duration = _pgDuration
+  , _author = author'
+  , _timesRead = _pgTimesRead
+  , _stars = _pgStars
+  , _genre = _pgGenre
+  , _story = _pgStory
+  , _tags = tags'
+  , _createdAt = _pgCreatedAt
+  , _updatedAt = _pgUpdatedAt
+  }
+mkLinkedStoryResource _ _ _ = error "Invalid number of args"
 
 
 mkStoryWrite :: StoryInsert -> StoryWrite
@@ -312,29 +330,3 @@ validStoryPutObject = Aeson.object
   , "story" .= ("The new/old value for the story" :: Text.Text)
   ]
 
-
-
--- Query Params Processing
-
-data StoryIncludes
-  = IAuthor
-  | ITags
-  deriving (Show, Eq)
-
-
-instance CI.Includes StoryIncludes where
-  getAll = [IAuthor, ITags]
-
-  fromCSV :: Text.Text -> Either TAe.ClientError [StoryIncludes]
-  fromCSV =
-    let
-      fromString :: Text.Text -> Either TAe.ClientError StoryIncludes
-      fromString "author" = Right IAuthor
-      fromString "tag" = Right ITags
-      fromString _ = Left TAe.InvalidQueryParams
-
-      f :: ([TAe.ClientError], [StoryIncludes]) -> Either TAe.ClientError [StoryIncludes]
-      f (x:_, _) = Left x
-      f (_, ys) = Right ys
-   in
-      f . DEither.partitionEithers . map fromString . Text.splitOn ","

@@ -52,6 +52,8 @@ library
                      , Controller.User
                      , Controller.Utils
 
+                     , Library.Link
+
                      , Utils
   build-depends:       base >= 4.7 && < 5
                      -- json parsing library
@@ -76,6 +78,7 @@ library
                      -- type level web dsl
                      , transformers
                      , text
+                     , text-show
                      -- need to make a web service
                      , wai
                      , wai-extra

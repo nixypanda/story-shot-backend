@@ -171,17 +171,17 @@ storyTagJoin = proc tag -> do
 
 
 tagsForStories :: [Int] -> O.Query (O.Column O.PGInt4, TT.TagRead)
-tagsForStories storyIDs = proc () -> do
+tagsForStories storyIDs' = proc () -> do
   tag <- ST.tagQuery -< ()
   sid <- storyTagJoin -< tag
-  O.restrict -< map O.constant storyIDs `O.in_` sid
+  O.restrict -< map O.constant storyIDs' `O.in_` sid
   Arrow.returnA -< (sid, tag)
 
 
 tagIDsForStories :: [Int] -> O.Query (O.Column O.PGInt4, O.Column O.PGInt4)
-tagIDsForStories storyIDs = proc () -> do
+tagIDsForStories storyIDs' = proc () -> do
   row <- storyTagsQuery -< ()
-  O.restrict -< map O.constant storyIDs `O.in_` TSt.storyColID row
+  O.restrict -< map O.constant storyIDs' `O.in_` TSt.storyColID row
   Arrow.returnA -< (TSt.storyColID row, TSt.tagColID row)
 
 
