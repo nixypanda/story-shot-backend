@@ -23,9 +23,7 @@ import qualified Web.Scotty.Trans as Scotty
 import qualified Init as I
 import qualified Type.User as TU
 import qualified Resource.User as RA
-import qualified Controller.Basic as CB
 import qualified Controller.Utils as CU
-import qualified Class.Includes as CI
 
 
 
@@ -33,16 +31,16 @@ import qualified Class.Includes as CI
 
 post :: I.ActionA
 post = do
-  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
-  user' :: TU.UserInsert <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TU.validUserInsertObject
+  includes <- CU.extractIncludes
+  user' :: TU.UserInsert <- CU.extractData TU.validUserInsertObject
   userResource <- MonadT.lift $ RA.createUserResource includes user'
   either Scotty.json Scotty.json userResource
 
 
 postBatch :: I.ActionA
 postBatch = do
-  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
-  users :: [TU.UserInsert] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TU.validUserInsertObject
+  includes <- CU.extractIncludes
+  users :: [TU.UserInsert] <- CU.extractData TU.validUserInsertObject
   userResources <- MonadT.lift $ RA.createUserResources includes users
   either Scotty.json Scotty.json userResources
 
@@ -53,7 +51,7 @@ postBatch = do
 getBatch :: I.ActionA
 getBatch = do
   qparams <- Scotty.params
-  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+  includes <- CU.extractIncludes
   ar <- MonadT.lift $ RA.getUserResources (CU.cursorPagination qparams) includes
   either Scotty.json Scotty.json ar
 
@@ -61,7 +59,7 @@ getBatch = do
 get :: I.ActionA
 get = do
   userId' <- Scotty.param "id"
-  includes <- (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+  includes <- CU.extractIncludes
   userResource <- MonadT.lift $ RA.getUserResource userId' includes
   either Scotty.json Scotty.json userResource
 
@@ -72,7 +70,7 @@ get = do
 put :: I.ActionA
 put = do
   userId' :: Int <- Scotty.param "id"
-  user' :: TU.UserPut' <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TU.validUserInsertObject
+  user' :: TU.UserPut' <- CU.extractData TU.validUserInsertObject
   let
     user'' = TU.mkUserPut userId' user'
 
@@ -82,7 +80,7 @@ put = do
 
 putBatch :: I.ActionA
 putBatch = do
-  users :: [TU.UserPut] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload TU.validUserPutObject
+  users :: [TU.UserPut] <- CU.extractData TU.validUserPutObject
   userResources <- MonadT.lift $ RA.updateUserResources users
   Scotty.json userResources
 
@@ -92,7 +90,7 @@ putBatch = do
 
 deleteBatch :: I.ActionA
 deleteBatch = do
-  users :: [Int] <- Scotty.jsonData `Scotty.rescue` CB.invalidPayload deleteBatchExample
+  users :: [Int] <- CU.extractData deleteBatchExample
   userResources <- MonadT.lift $ RA.deleteUserResources users
   Scotty.json userResources
 
