@@ -4,14 +4,14 @@
 
 
 module Resource.Tag
-  ( getTagResources
-  , getTagResource
-  , createTagResources
-  , createTagResource
-  , updateTagResources
-  , updateTagResource
-  , deleteTagResources
-  , deleteTagResource
+  ( getTags
+  , getTag
+  , createTags
+  , createTag
+  , updateTags
+  , updateTag
+  , deleteTags
+  , deleteTag
   ) where
 
 
@@ -26,42 +26,43 @@ import qualified Storage.Tag as ST
 
 -- CREATE
 
-createTagResource :: TT.TagInsert -> I.AppT (TD.Doc TT.Tag)
-createTagResource = fmap TM.indexDoc' . ST.createTag
+createTag :: TT.TagInsert -> I.AppT TT.Tag
+createTag = ST.createTag
 
 
-createTagResources :: [TT.TagInsert] -> I.AppT (TD.Doc TT.Tag)
-createTagResources = fmap TM.docMulti . ST.createTags
+createTags :: [TT.TagInsert] -> I.AppT [TT.Tag]
+createTags = ST.createTags
 
 
 
 -- RETRIVE
 
-getTagResources :: TP.CursorParam -> I.AppT (TD.Doc TT.Tag)
-getTagResources = fmap TM.docMulti . ST.getTags
+
+getTags :: TP.CursorParam -> I.AppT [TT.Tag]
+getTags = ST.getTags
 
 
-getTagResource :: Int -> I.AppT (TD.MaybeResource TT.Tag)
-getTagResource = fmap TM.docOrError . ST.getTag
+getTag :: Int -> I.AppT (Maybe TT.Tag)
+getTag = ST.getTag
 
 
 
 -- UPDATE
 
-updateTagResource :: TT.TagPut -> I.AppT (TD.MaybeResource TT.Tag)
-updateTagResource = fmap TM.docOrError . ST.updateTag
+updateTag :: TT.TagPut -> I.AppT (Maybe TT.Tag)
+updateTag = ST.updateTag
 
 
-updateTagResources :: [TT.TagPut] -> I.AppT (TD.Doc TT.Tag)
-updateTagResources = fmap TM.docMulti . ST.updateTags
+updateTags :: [TT.TagPut] -> I.AppT [TT.Tag]
+updateTags = ST.updateTags
 
 
 
 -- DELETE
 
-deleteTagResource :: Int -> I.AppT (TD.MaybeResource TT.Tag)
-deleteTagResource = fmap TM.docMetaOrError . ST.deleteTag
+deleteTag :: Int -> I.AppT Int
+deleteTag = fmap fromIntegral . ST.deleteTag
 
 
-deleteTagResources :: [Int] -> I.AppT (TD.Doc TT.Tag)
-deleteTagResources = fmap (TM.docMeta . fromIntegral) . ST.deleteTags
+deleteTags :: [Int] -> I.AppT Int
+deleteTags = fmap fromIntegral . ST.deleteTags

@@ -24,7 +24,7 @@ module Type.User
   , mkUserFromDB
   , mkUserWrite'
   , mkUserPut
-  , mkLinkedUserResource
+  , mkLinkedUser
   , userID
   , pgUserID
   , userAuthorID
@@ -96,6 +96,7 @@ type UserRead = PGUser'
 
 instance CR.Resource User where
   rid = _userID
+  type' _ = "user" :: Text.Text
   createdAt = _createdAt
   updatedAt = _updatedAt
 
@@ -107,15 +108,15 @@ instance CR.LinkedResource User where
   lrid = _userID
 
 
-mkLinkedUserResource :: PGUser -> [TO.Or TA.AuthorS TA.Author] -> [t1] -> User
-mkLinkedUserResource PGUser{..} [author'] [] = User
+mkLinkedUser :: PGUser -> [TO.Or TA.AuthorS TA.Author] -> [t1] -> User
+mkLinkedUser PGUser{..} [author'] [] = User
   { _userID = _pgUserID
     , _userName = _pgUserName
     , _userAuthor = author'
     , _createdAt = _pgCreatedAt
     , _updatedAt = _pgUpdatedAt
   }
-mkLinkedUserResource _ _ _ = error "Undefined is not a function"
+mkLinkedUser _ _ _ = error "Undefined is not a function"
 
 
 -- Magic

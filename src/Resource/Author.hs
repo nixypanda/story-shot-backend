@@ -4,14 +4,14 @@
 
 
 module Resource.Author
-  ( getAuthorResources
-  , getAuthorResource
-  , createAuthorResources
-  , createAuthorResource
-  , updateAuthorResources
-  , updateAuthorResource
-  , deleteAuthorResources
-  , deleteAuthorResource
+  ( getAuthors
+  , getAuthor
+  , createAuthors
+  , createAuthor
+  , updateAuthors
+  , updateAuthor
+  , deleteAuthors
+  , deleteAuthor
   ) where
 
 
@@ -26,42 +26,42 @@ import qualified Storage.Author as SA
 
 -- CREATE
 
-createAuthorResource :: TA.AuthorInsert -> I.AppT (TD.Doc TA.Author)
-createAuthorResource = fmap TM.indexDoc' . SA.createAuthor
+createAuthor :: TA.AuthorInsert -> I.AppT TA.Author
+createAuthor = SA.createAuthor
 
 
-createAuthorResources :: [TA.AuthorInsert] -> I.AppT (TD.Doc TA.Author)
-createAuthorResources = fmap TM.docMulti . SA.createAuthors
+createAuthors :: [TA.AuthorInsert] -> I.AppT [TA.Author]
+createAuthors = SA.createAuthors
 
 
 
 -- RETRIVE
 
-getAuthorResources :: TP.CursorParam -> I.AppT (TD.Doc TA.Author)
-getAuthorResources = fmap TM.docMulti . SA.getAuthors
+getAuthors :: TP.CursorParam -> I.AppT [TA.Author]
+getAuthors = SA.getAuthors
 
 
-getAuthorResource :: Int -> I.AppT (TD.MaybeResource TA.Author)
-getAuthorResource = fmap TM.docOrError . SA.getAuthor
+getAuthor :: Int -> I.AppT (Maybe TA.Author)
+getAuthor = SA.getAuthor
 
 
 
 -- UPDATE
 
-updateAuthorResource :: TA.AuthorPut -> I.AppT (TD.MaybeResource TA.Author)
-updateAuthorResource = fmap TM.docOrError . SA.updateAuthor
+updateAuthor :: TA.AuthorPut -> I.AppT (Maybe TA.Author)
+updateAuthor = SA.updateAuthor
 
 
-updateAuthorResources :: [TA.AuthorPut] -> I.AppT (TD.Doc TA.Author)
-updateAuthorResources = fmap TM.docMulti . SA.updateAuthors
+updateAuthors :: [TA.AuthorPut] -> I.AppT [TA.Author]
+updateAuthors = SA.updateAuthors
 
 
 
 -- DELETE
 
-deleteAuthorResource :: Int -> I.AppT (TD.MaybeResource TA.Author)
-deleteAuthorResource = fmap TM.docMetaOrError . SA.deleteAuthor
+deleteAuthor :: Int -> I.AppT Int
+deleteAuthor = fmap fromIntegral . SA.deleteAuthor
 
 
-deleteAuthorResources :: [Int] -> I.AppT (TD.Doc TA.Author)
-deleteAuthorResources = fmap (TM.docMeta . fromIntegral) . SA.deleteAuthors
+deleteAuthors :: [Int] -> I.AppT Int
+deleteAuthors = fmap fromIntegral . SA.deleteAuthors

@@ -7,19 +7,25 @@ module Controller.Utils
   ( cursorPagination
   , extractData
   , extractIncludes
+  , deleteBatchExample
+  , executeAction
   ) where
 
+
+import Data.Aeson ((.=))
 
 import qualified Data.Default as Def
 import qualified Data.Either.Utils as EitherUtils
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Text as Text
 import qualified Data.Text.Lazy as LazyText
 import qualified Data.Text.Lazy.Read as LazyTextRead
 import qualified Web.Scotty.Trans as Scotty
 
 import qualified Init as I
 import qualified Type.Pagination as TP
+import qualified Type.Doc as TD
 import qualified Controller.Basic as CB
 import qualified Class.Includes as CI
 import qualified Type.AppError as TAe
@@ -46,3 +52,17 @@ extractData validObjExample =
 extractIncludes :: CI.Includes a => Scotty.ActionT I.Error I.AppT (Either TAe.ClientError [a])
 extractIncludes =
   (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+
+
+deleteBatchExample :: Aeson.Value
+deleteBatchExample = Aeson.object
+  [ "info" .= ("Please provide an array of IDs" :: Text.Text)
+  ]
+
+
+executeAction :: (TAe.APIError e, Monad m)
+               => Either e t -> (t -> m (Either (TD.ErrorDoc a) b)) -> m (Either (TD.ErrorDoc a) b)
+executeAction (Left e) _ = return . Left $ TAe.docError e
+executeAction (Right includes) f = f includes
+
+

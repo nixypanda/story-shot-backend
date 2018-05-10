@@ -61,6 +61,12 @@ docMetaOrError 1 = Right $ indexDoc [] $ TD.mkMeta $ CountInfo 1
 docMetaOrError _ = error "Impossible"
 
 
+metaDocFromInt :: (CR.Resource r) => Int -> Either (TD.ErrorDoc r) (TD.Doc r)
+metaDocFromInt 0 = Left $ TAe.docError TAe.ResourceNotFound
+metaDocFromInt 1 = Right $ indexDoc [] $ TD.mkMeta $ CountInfo 1
+metaDocFromInt _ = error "Impossible"
+
+
 docMeta :: Int -> TD.Doc r
 docMeta = indexDoc [] . TD.mkMeta . CountInfo
 

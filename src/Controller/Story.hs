@@ -21,10 +21,12 @@ import qualified Control.Monad.Trans as MonadT
 import qualified Web.Scotty.Trans as Scotty
 
 import qualified Type.Story as TS
+import qualified Type.AppError as TAe
+import qualified Type.Meta as TM
+import qualified Type.Doc as TD
 import qualified Resource.Story as RS
 import qualified Init as I
 import qualified Controller.Utils as CU
-
 
 
 -- CREATE
@@ -32,16 +34,18 @@ import qualified Controller.Utils as CU
 post :: I.ActionA
 post = do
   includes <- CU.extractIncludes
-  story' :: TS.StoryInsert <- CU.extractData TS.validStoryInsertObject
-  storyResource <- MonadT.lift $ RS.createStoryResource includes story'
+  storyInsertObj :: TS.StoryInsert <- CU.extractData TS.validStoryInsertObject
+  storyResource <- CU.executeAction includes (\includes ->
+    fmap TM.docOrError . MonadT.lift $ RS.createStory includes storyInsertObj)
   either Scotty.json Scotty.json storyResource
 
 
 postBatch :: I.ActionA
 postBatch = do
   includes <- CU.extractIncludes
-  stories :: [TS.StoryInsert] <- CU.extractData TS.validStoryInsertObject
-  storyResources <- MonadT.lift $ RS.createStoryResources includes stories
+  storyInsertObjs :: [TS.StoryInsert] <- CU.extractData TS.validStoryInsertObject
+  storyResources :: TD.MaybeResource TS.Story <- CU.executeAction includes (\includes ->
+    fmap (Right . TM.docMulti) . MonadT.lift $ RS.createStories includes storyInsertObjs)
   either Scotty.json Scotty.json storyResources
 
 
@@ -52,7 +56,8 @@ getBatch :: I.ActionA
 getBatch = do
   qparams <- Scotty.params
   includes <- CU.extractIncludes
-  storyResources <- MonadT.lift $ RS.getStoryResources (CU.cursorPagination qparams) includes
+  storyResources :: TD.MaybeResource TS.Story <- CU.executeAction includes (\includes ->
+    fmap (Right . TM.docMulti) . MonadT.lift $ RS.getStories (CU.cursorPagination qparams) includes)
   either Scotty.json Scotty.json storyResources
 
 
@@ -60,14 +65,16 @@ get :: I.ActionA
 get = do
   storyId' <- Scotty.param "id"
   includes <- CU.extractIncludes
-  storyResource <- MonadT.lift $ RS.getStoryResource storyId' includes
+  storyResource :: TD.MaybeResource TS.Story <- CU.executeAction includes (\includes ->
+    fmap TM.docOrError . MonadT.lift $ RS.getStory storyId' includes)
   either Scotty.json Scotty.json storyResource
 
 
 getRandom :: I.ActionA
 getRandom = do
   includes <- CU.extractIncludes
-  storyResource <- MonadT.lift $ RS.getRandomStoryResource includes
+  storyResource :: TD.MaybeResource TS.Story <- CU.executeAction includes (\includes ->
+    fmap TM.docOrError . MonadT.lift $ RS.getRandomStory includes)
   either Scotty.json Scotty.json storyResource
 
 
@@ -76,15 +83,19 @@ getRandom = do
 
 put :: I.ActionA
 put = do
-  story' :: TS.StoryPut <- CU.extractData TS.validStoryPutObject
-  storyResource <- MonadT.lift $ RS.updateStoryResource story'
+  storyId :: Int <- Scotty.param "id"
+  storyInsertObj :: TS.StoryPut' <- CU.extractData TS.validStoryInsertObject
+  let storyPutObj = TS.mkStoryPut storyId storyInsertObj
+  maybeUpdatedStory <- MonadT.lift $ RS.updateStory storyPutObj
+  let storyResource = TM.docOrError maybeUpdatedStory
   either Scotty.json Scotty.json storyResource
 
 
 putBatch :: I.ActionA
 putBatch = do
-  stories :: [TS.StoryPut] <- CU.extractData TS.validStoryPutObject
-  storyResources <- MonadT.lift $ RS.updateStoryResources stories
+  storyPutObjs :: [TS.StoryPut] <- CU.extractData TS.validStoryPutObject
+  updatedStories <- MonadT.lift $ RS.updateStories storyPutObjs
+  let storyResources = TM.docMulti updatedStories
   Scotty.json storyResources
 
 
@@ -93,13 +104,15 @@ putBatch = do
 
 deleteBatch :: I.ActionA
 deleteBatch = do
-  stories :: [Int] <- CU.extractData undefined
-  storyResources <- MonadT.lift $ RS.deleteStoryResources stories
-  Scotty.json storyResources
+  storyIds :: [Int] <- CU.extractData CU.deleteBatchExample
+  totalDeleted <- MonadT.lift $ RS.deleteStories storyIds
+  let storyMetaInfo :: TD.MaybeResource TS.Story = TM.metaDocFromInt totalDeleted
+  Scotty.json storyMetaInfo
 
 
 delete :: I.ActionA
 delete = do
-  storyId' <- Scotty.param "id"
-  storyResource <- MonadT.lift $ RS.deleteStoryResource storyId'
-  either Scotty.json Scotty.json storyResource
+  storyId <- Scotty.param "id"
+  totalDeleted <- MonadT.lift $ RS.deleteStory storyId
+  let storyMetaInfo :: TD.MaybeResource TS.Story = TM.metaDocFromInt totalDeleted
+  either Scotty.json Scotty.json storyMetaInfo

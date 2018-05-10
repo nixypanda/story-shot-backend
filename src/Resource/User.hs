@@ -5,14 +5,14 @@
 
 
 module Resource.User
-  ( getUserResources
-  , getUserResource
-  , createUserResources
-  , createUserResource
-  , updateUserResources
-  , updateUserResource
-  , deleteUserResources
-  , deleteUserResource
+  ( getUsers
+  , getUser
+  , createUsers
+  , createUser
+  , updateUsers
+  , updateUser
+  , deleteUsers
+  , deleteUser
   ) where
 
 import qualified Data.Map as M
@@ -36,48 +36,43 @@ import qualified Library.Link as LL
 
 -- CREATE
 
-createUserResource :: Either TAe.ClientError [UserIncludes] -> TU.UserInsert -> I.AppT (TD.MaybeResource TU.User)
-createUserResource (Left e) _ = return . Left $ TAe.docError e
-createUserResource (Right includes) user = do
+createUser :: [UserIncludes] -> TU.UserInsert -> I.AppT TU.User
+createUser includes user = do
   author <- SA.createAuthor $ TA.mkAuthorInsert $ TU.userName user
   user' <- SU.createUser user author
-  return . Right . TM.indexDoc' . head $ _linkAll includes [user'] [author]
+  return . head $ _linkAll includes [user'] [author]
 
 
-createUserResources :: Either TAe.ClientError [UserIncludes] -> [TU.UserInsert] -> I.AppT (TD.MaybeResource TU.User)
-createUserResources (Left e) _ = return . Left $ TAe.docError e
-createUserResources (Right includes) users = do
+createUsers :: [UserIncludes] -> [TU.UserInsert] -> I.AppT [TU.User]
+createUsers includes users = do
   authors <- SA.createAuthors $ fmap (TA.mkAuthorInsert . TU.userName) users
   users' <- SU.createUsers users authors
-  return . Right . TM.docMulti $ _linkAll includes users' authors
+  return $ _linkAll includes users' authors
 
 
 
 -- RETRIVE
 
-getUserResources :: TP.CursorParam -> Either TAe.ClientError [UserIncludes]-> I.AppT (TD.MaybeResource TU.User)
-getUserResources _ (Left e) = return . Left $ TAe.docError e
-getUserResources cur (Right includes) = do
-  users <- SU.getUsers cur
-  (Right . TM.docMulti) <$> _fromPGUsers includes users
+getUsers :: TP.CursorParam -> [UserIncludes]-> I.AppT [TU.User]
+getUsers cur includes =
+  SU.getUsers cur >>= _fromPGUsers includes
 
 
-getUserResource :: Int -> Either TAe.ClientError [UserIncludes] -> I.AppT (TD.MaybeResource TU.User)
-getUserResource _ (Left e) = return $ Left $ TAe.docError e
-getUserResource sid (Right includes) = do
+getUser :: Int -> [UserIncludes] -> I.AppT (Maybe TU.User)
+getUser sid includes = do
   mstory <- SU.getUser sid
   case mstory of
-    Nothing      -> return $ Left $ TAe.docError TAe.ResourceNotFound
+    Nothing      -> return Nothing
     Just pguser -> do
       muser <- LL.fromPG
-        TU.mkLinkedUserResource
+        TU.mkLinkedUser
         [(IAuthor, SA.getAuthor, TA.mkAuthorS, TU.userAuthorID pguser)]
         []
         includes
         pguser
       case muser of
-        Nothing -> return $ Left $ TAe.docError TAe.ResourceNotFound
-        Just user -> return $ Right $ TM.indexDoc' user
+        Nothing -> return Nothing
+        Just user -> return $ Just user
 
 
 
@@ -100,7 +95,7 @@ _fromPGUsers includes users =
     userAuthorIDMap = M.fromList $ zip userIDs authorIDs
   in
     LL.fromPGs
-      TU.mkLinkedUserResource
+      TU.mkLinkedUser
       [(IAuthor, SA.getMultiAuthors, TA.mkAuthorS, userAuthorIDMap)]
       []
       includes
@@ -109,23 +104,23 @@ _fromPGUsers includes users =
 
 -- UPDATE
 
-updateUserResource :: TU.UserPut -> I.AppT (TD.MaybeResource TU.User)
-updateUserResource = undefined -- fmap TM.docOrError . SU.updateUser
+updateUser :: TU.UserPut -> I.AppT (Maybe TU.User)
+updateUser = undefined -- fmap TM.docOrError . SU.updateUser
 
 
-updateUserResources :: [TU.UserPut] -> I.AppT (TD.MaybeResource TU.User)
-updateUserResources = undefined -- fmap TM.docMulti . SU.updateUsers
+updateUsers :: [TU.UserPut] -> I.AppT [TU.User]
+updateUsers = undefined -- fmap TM.docMulti . SU.updateUsers
 
 
 
 -- DELETE
 
-deleteUserResource :: Int -> I.AppT (TD.MaybeResource TU.User)
-deleteUserResource = fmap TM.docMetaOrError . SU.deleteUser
+deleteUser :: Int -> I.AppT Int
+deleteUser = fmap fromIntegral . SU.deleteUser
 
 
-deleteUserResources :: [Int] -> I.AppT (TD.Doc TU.User)
-deleteUserResources = fmap (TM.docMeta . fromIntegral) . SU.deleteUsers
+deleteUsers :: [Int] -> I.AppT Int
+deleteUsers = fmap fromIntegral . SU.deleteUsers
 
 
 

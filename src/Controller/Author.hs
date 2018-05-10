@@ -15,13 +15,15 @@ module Controller.Author
   ) where
 
 
-import qualified Control.Monad.Trans as CMT
+import qualified Control.Monad.Trans as MonadT
 
 import qualified Data.Aeson as DA
-import qualified Web.Scotty.Trans as WST
+import qualified Web.Scotty.Trans as Scotty
 
 import qualified Init as I
 import qualified Type.Author as TA
+import qualified Type.Doc as TD
+import qualified Type.Meta as TM
 import qualified Resource.Author as RA
 import qualified Controller.Utils as CU
 
@@ -31,16 +33,18 @@ import qualified Controller.Utils as CU
 
 post :: I.ActionA
 post = do
-  author' :: TA.AuthorInsert <- CU.extractData TA.validAuthorInsertObject
-  authorResource <- CMT.lift $ RA.createAuthorResource author'
-  WST.json authorResource
+  authorInsertObj :: TA.AuthorInsert <- CU.extractData TA.validAuthorInsertObject
+  author <- MonadT.lift $ RA.createAuthor authorInsertObj
+  let authorResource = TM.indexDoc' author
+  Scotty.json authorResource
 
 
 postBatch :: I.ActionA
 postBatch = do
-  authors :: [TA.AuthorInsert] <- CU.extractData TA.validAuthorInsertObject
-  authorResources <- CMT.lift $ RA.createAuthorResources authors
-  WST.json authorResources
+  authorInsertObjs :: [TA.AuthorInsert] <- CU.extractData TA.validAuthorInsertObject
+  authors <- MonadT.lift $ RA.createAuthors authorInsertObjs
+  let authorResources = TM.docMulti authors
+  Scotty.json authorResources
 
 
 
@@ -48,16 +52,18 @@ postBatch = do
 
 getBatch :: I.ActionA
 getBatch = do
-  qparams <- WST.params
-  ar <- CMT.lift . RA.getAuthorResources $ CU.cursorPagination qparams
-  WST.json ar
+  qparams <- Scotty.params
+  authors <- MonadT.lift . RA.getAuthors $ CU.cursorPagination qparams
+  let authorResources = TM.docMulti authors
+  Scotty.json authorResources
 
 
 get :: I.ActionA
 get = do
-  authorId' <- WST.param "id"
-  authorResource <- CMT.lift $ RA.getAuthorResource authorId'
-  either WST.json WST.json authorResource
+  authorId' <- Scotty.param "id"
+  maybeAuthor <- MonadT.lift $ RA.getAuthor authorId'
+  let authorResource = TM.docOrError maybeAuthor
+  either Scotty.json Scotty.json authorResource
 
 
 
@@ -65,20 +71,20 @@ get = do
 
 put :: I.ActionA
 put = do
-  authorId' :: Int <- WST.param "id"
-  author' :: TA.AuthorInsert <- CU.extractData TA.validAuthorInsertObject
-  let
-    author'' = TA.mkAuthorPut authorId' (TA.authorName author')
-
-  authorResource <- CMT.lift $ RA.updateAuthorResource author''
-  either WST.json WST.json authorResource
+  authorId :: Int <- Scotty.param "id"
+  authorInsertObj :: TA.AuthorInsert <- CU.extractData TA.validAuthorInsertObject
+  let authorPutObj = TA.mkAuthorPut authorId (TA.authorName authorInsertObj)
+  maybeUpdatedAuthor <- MonadT.lift $ RA.updateAuthor authorPutObj
+  let authorResource = TM.docOrError maybeUpdatedAuthor
+  either Scotty.json Scotty.json authorResource
 
 
 putBatch :: I.ActionA
 putBatch = do
-  authors :: [TA.AuthorPut] <- CU.extractData TA.validAuthorPutObject
-  authorResources <- CMT.lift $ RA.updateAuthorResources authors
-  WST.json authorResources
+  authorPutObjs :: [TA.AuthorPut] <- CU.extractData TA.validAuthorPutObject
+  updatedAuthors <- MonadT.lift $ RA.updateAuthors authorPutObjs
+  let authorResources = TM.docMulti updatedAuthors
+  Scotty.json authorResources
 
 
 
@@ -86,20 +92,15 @@ putBatch = do
 
 deleteBatch :: I.ActionA
 deleteBatch = do
-  authors :: [Int] <- CU.extractData deleteBatchExample
-  authorResources <- CMT.lift $ RA.deleteAuthorResources authors
-  WST.json authorResources
+  authorIds :: [Int] <- CU.extractData CU.deleteBatchExample
+  totalDeleted <- MonadT.lift $ RA.deleteAuthors authorIds
+  let authorMetaInfo :: TD.MaybeResource TA.Author = TM.metaDocFromInt totalDeleted
+  Scotty.json authorMetaInfo
 
 
 delete :: I.ActionA
 delete = do
-  authorId' <- WST.param "id"
-  authorResource <- CMT.lift $ RA.deleteAuthorResource authorId'
-  either WST.json WST.json authorResource
-
-
-
--- HELPERS
-
-deleteBatchExample :: DA.Value
-deleteBatchExample = undefined
+  authorId <- Scotty.param "id"
+  totalDeleted <- MonadT.lift $ RA.deleteAuthor authorId
+  let authorMetaInfo :: TD.MaybeResource TA.Author = TM.metaDocFromInt totalDeleted
+  either Scotty.json Scotty.json authorMetaInfo

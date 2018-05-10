@@ -14,15 +14,17 @@ module Type.Story
   , PGStory
   , StoryInsert
   , StoryPut
+  , StoryPut'
   , StoryWrite
   , StoryRead
   , pgStoryID
   , storyAuthorID
   , storyTable
+  , mkStoryPut
   , mkStoryWrite
   , mkStoryWrite'
   , mkStoryFromDB
-  , mkLinkedStoryResource
+  , mkLinkedStory
   , storyID
   , storyColID
   , tagIDs
@@ -87,6 +89,7 @@ data PGStory' storyID title duration author timesRead stars genre story createdA
 type Story       = Story' Int Text.Text         TD.Duration (TO.Or TA.AuthorS TA.Author) Int         Int         TG.Genre         (TO.Or [TT.TagS] [TT.Tag]) Text.Text         DT.UTCTime DT.UTCTime
 type StoryS      = Story' Int ()           ()       ()                  ()          ()          ()            ()                ()           ()      ()
 type StoryPut    = Story' Int (Maybe Text.Text) ()       (Maybe Int)         (Maybe Int) (Maybe Int) (Maybe TG.Genre) (Maybe [Int])     (Maybe Text.Text) ()      ()
+type StoryPut'   = Story' () (Maybe Text.Text) ()       (Maybe Int)         (Maybe Int) (Maybe Int) (Maybe TG.Genre) (Maybe [Int])     (Maybe Text.Text) ()      ()
 type StoryInsert = Story' ()  Text.Text         ()       Int                 ()          ()          TG.Genre         [Int]             Text.Text         ()      ()
 
 type PGStory   = PGStory' Int Text.Text TD.Duration Int Int Int TG.Genre Text.Text DT.UTCTime DT.UTCTime
@@ -175,8 +178,8 @@ mkStoryFromDB PGStory{..} author' tags' = Story
   , _updatedAt = _pgUpdatedAt
   }
 
-mkLinkedStoryResource :: PGStory -> [TO.Or TA.AuthorS TA.Author] -> [TO.Or [TT.TagS] [TT.Tag]] -> Story
-mkLinkedStoryResource PGStory{..} [author'] [tags'] = Story
+mkLinkedStory :: PGStory -> [TO.Or TA.AuthorS TA.Author] -> [TO.Or [TT.TagS] [TT.Tag]] -> Story
+mkLinkedStory PGStory{..} [author'] [tags'] = Story
   { _storyID = _pgStoryID
   , _title = _pgTitle
   , _duration = _pgDuration
@@ -189,7 +192,7 @@ mkLinkedStoryResource PGStory{..} [author'] [tags'] = Story
   , _createdAt = _pgCreatedAt
   , _updatedAt = _pgUpdatedAt
   }
-mkLinkedStoryResource _ _ _ = error "Invalid number of args"
+mkLinkedStory _ _ _ = error "Invalid number of args"
 
 
 mkStoryWrite :: StoryInsert -> StoryWrite
@@ -221,6 +224,22 @@ mkStoryWrite' Story{..} PGStory{..} = PGStory
   , _pgUpdatedAt = Nothing
   }
 
+
+mkStoryPut :: Int -> StoryPut' -> StoryPut
+mkStoryPut storyId Story{..} = Story
+  { _storyID = storyId
+  , _title = _title
+  , _duration = ()
+  , _author = _author
+  , _timesRead = _timesRead
+  , _stars = _stars
+  , _genre = _genre
+  , _story = _story
+  , _tags  = _tags
+  , _createdAt = ()
+  , _updatedAt = ()
+  }
+  
 
 storyID :: Story' Int b c d e f g h i j k -> Int
 storyID = _storyID
@@ -293,6 +312,21 @@ instance Aeson.FromJSON StoryInsert where
 instance Aeson.FromJSON StoryPut where
   parseJSON = Aeson.withObject "story" $ \o -> Story
       <$> o .: "id"
+      <*> o .: "title"
+      <*> pure ()
+      <*> o .: "author"
+      <*> o .: "read-count"
+      <*> o .: "stars"
+      <*> o .: "genre"
+      <*> o .: "tags"
+      <*> o .: "story"
+      <*> pure ()
+      <*> pure ()
+
+
+instance Aeson.FromJSON StoryPut' where
+  parseJSON = Aeson.withObject "story" $ \o -> Story
+      <$> pure ()
       <*> o .: "title"
       <*> pure ()
       <*> o .: "author"

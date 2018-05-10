@@ -17,12 +17,13 @@ module Controller.User
 
 import qualified Control.Monad.Trans as MonadT
 
-import qualified Data.Aeson as DA
 import qualified Web.Scotty.Trans as Scotty
 
 import qualified Init as I
+import qualified Type.Meta as TM
+import qualified Type.Doc as TD
 import qualified Type.User as TU
-import qualified Resource.User as RA
+import qualified Resource.User as RU
 import qualified Controller.Utils as CU
 
 
@@ -32,16 +33,18 @@ import qualified Controller.Utils as CU
 post :: I.ActionA
 post = do
   includes <- CU.extractIncludes
-  user' :: TU.UserInsert <- CU.extractData TU.validUserInsertObject
-  userResource <- MonadT.lift $ RA.createUserResource includes user'
+  userInsertObj :: TU.UserInsert <- CU.extractData TU.validUserInsertObject
+  userResource :: TD.MaybeResource TU.User <- CU.executeAction includes (\incs ->
+    fmap (Right . TM.indexDoc') . MonadT.lift $ RU.createUser incs userInsertObj)
   either Scotty.json Scotty.json userResource
 
 
 postBatch :: I.ActionA
 postBatch = do
   includes <- CU.extractIncludes
-  users :: [TU.UserInsert] <- CU.extractData TU.validUserInsertObject
-  userResources <- MonadT.lift $ RA.createUserResources includes users
+  userInsertObjs :: [TU.UserInsert] <- CU.extractData TU.validUserInsertObject
+  userResources :: TD.MaybeResource TU.User <- CU.executeAction includes (\incs ->
+    fmap (Right . TM.docMulti) . MonadT.lift $ RU.createUsers incs userInsertObjs)
   either Scotty.json Scotty.json userResources
 
 
@@ -52,15 +55,17 @@ getBatch :: I.ActionA
 getBatch = do
   qparams <- Scotty.params
   includes <- CU.extractIncludes
-  ar <- MonadT.lift $ RA.getUserResources (CU.cursorPagination qparams) includes
-  either Scotty.json Scotty.json ar
+  userResources :: TD.MaybeResource TU.User <- CU.executeAction includes (\incs ->
+    fmap (Right . TM.docMulti) . MonadT.lift $ RU.getUsers (CU.cursorPagination qparams) incs)
+  either Scotty.json Scotty.json userResources
 
 
 get :: I.ActionA
 get = do
   userId' <- Scotty.param "id"
   includes <- CU.extractIncludes
-  userResource <- MonadT.lift $ RA.getUserResource userId' includes
+  userResource :: TD.MaybeResource TU.User <- CU.executeAction includes (\incs ->
+    fmap TM.docOrError . MonadT.lift $ RU.getUser userId' incs)
   either Scotty.json Scotty.json userResource
 
 
@@ -69,19 +74,19 @@ get = do
 
 put :: I.ActionA
 put = do
-  userId' :: Int <- Scotty.param "id"
-  user' :: TU.UserPut' <- CU.extractData TU.validUserInsertObject
-  let
-    user'' = TU.mkUserPut userId' user'
-
-  userResource <- MonadT.lift $ RA.updateUserResource user''
+  userId :: Int <- Scotty.param "id"
+  userPutObj' :: TU.UserPut' <- CU.extractData TU.validUserInsertObject
+  let userPutObj = TU.mkUserPut userId userPutObj'
+  maybeUpdatedUser <- MonadT.lift $ RU.updateUser userPutObj
+  let userResource = TM.docOrError maybeUpdatedUser
   either Scotty.json Scotty.json userResource
 
 
 putBatch :: I.ActionA
 putBatch = do
-  users :: [TU.UserPut] <- CU.extractData TU.validUserPutObject
-  userResources <- MonadT.lift $ RA.updateUserResources users
+  userPutObjs :: [TU.UserPut] <- CU.extractData TU.validUserPutObject
+  updatedUsers <- MonadT.lift $ RU.updateUsers userPutObjs
+  let userResources = TM.docMulti updatedUsers
   Scotty.json userResources
 
 
@@ -90,20 +95,15 @@ putBatch = do
 
 deleteBatch :: I.ActionA
 deleteBatch = do
-  users :: [Int] <- CU.extractData deleteBatchExample
-  userResources <- MonadT.lift $ RA.deleteUserResources users
-  Scotty.json userResources
+  userIds :: [Int] <- CU.extractData CU.deleteBatchExample
+  totalDeleted <- MonadT.lift $ RU.deleteUsers userIds
+  let userMetaInfo :: TD.MaybeResource TU.User = TM.metaDocFromInt totalDeleted
+  Scotty.json userMetaInfo
 
 
 delete :: I.ActionA
 delete = do
-  userId' <- Scotty.param "id"
-  userResource <- MonadT.lift $ RA.deleteUserResource userId'
-  either Scotty.json Scotty.json userResource
-
-
-
--- HELPERS
-
-deleteBatchExample :: DA.Value
-deleteBatchExample = undefined
+  userId <- Scotty.param "id"
+  totalDeleted <- MonadT.lift $ RU.deleteUsers userId
+  let userMetaInfo :: TD.MaybeResource TU.User = TM.metaDocFromInt totalDeleted
+  either Scotty.json Scotty.json userMetaInfo

@@ -20,6 +20,8 @@ import qualified Control.Monad.Trans as MonadT
 import qualified Web.Scotty.Trans as Scotty
 
 import qualified Type.Tag as TT
+import qualified Type.Meta as TM
+import qualified Type.Doc as TD
 import qualified Resource.Tag as RT
 import qualified Init as I
 import qualified Controller.Utils as CU
@@ -30,14 +32,17 @@ import qualified Controller.Utils as CU
 
 post :: I.ActionA
 post = do
-  tag' :: TT.TagInsert <- CU.extractData TT.validTagInsertObject
-  tagResource <- MonadT.lift $ RT.createTagResource tag'
+  tagInsertObj :: TT.TagInsert <- CU.extractData TT.validTagInsertObject
+  tag <- MonadT.lift $ RT.createTag tagInsertObj
+  let tagResource = TM.indexDoc' tag
   Scotty.json tagResource
+
 
 postBatch :: I.ActionA
 postBatch = do
-  tags :: [TT.TagInsert] <- CU.extractData TT.validTagInsertObject
-  tagResources <- MonadT.lift $ RT.createTagResources tags
+  tagInsertObjs :: [TT.TagInsert] <- CU.extractData TT.validTagInsertObject
+  tags <- MonadT.lift $ RT.createTags tagInsertObjs
+  let tagResources = TM.docMulti tags
   Scotty.json tagResources
 
 
@@ -47,15 +52,17 @@ postBatch = do
 getBatch :: I.ActionA
 getBatch = do
   qparams <- Scotty.params
-  ar <- MonadT.lift . RT.getTagResources $ CU.cursorPagination qparams
-  Scotty.json ar
+  tags <- MonadT.lift . RT.getTags $ CU.cursorPagination qparams
+  let tagResources = TM.docMulti tags
+  Scotty.json tagResources
 
 
 get :: I.ActionA
 get = do
   tagId' <- Scotty.param "id"
-  tagResource <- MonadT.lift $ RT.getTagResource tagId'
-  either Scotty.json Scotty.json tagResource
+  maybeTag <- MonadT.lift $ RT.getTag tagId'
+  let tagResourceOrErrorDoc = TM.docOrError maybeTag
+  either Scotty.json Scotty.json tagResourceOrErrorDoc
 
 
 
@@ -63,19 +70,19 @@ get = do
 
 put :: I.ActionA
 put = do
-  tagId' :: Int <- Scotty.param "id"
-  tag' :: TT.TagInsert <- CU.extractData TT.validTagInsertObject
-  let
-    tag'' = TT.mkTagPut tagId' (TT.tagName tag') (TT.tagGenre tag')
-
-  tagResource <- MonadT.lift $ RT.updateTagResource tag''
+  tagId :: Int <- Scotty.param "id"
+  tagInsertObj :: TT.TagInsert <- CU.extractData TT.validTagInsertObject
+  let tag'' = TT.mkTagPut tagId (TT.tagName tagInsertObj) (TT.tagGenre tagInsertObj)
+  maybeUpdatedTag <- MonadT.lift $ RT.updateTag tag''
+  let tagResource = TM.docOrError maybeUpdatedTag
   either Scotty.json Scotty.json tagResource
 
 
 putBatch :: I.ActionA
 putBatch = do
-  tags :: [TT.TagPut] <- CU.extractData TT.validTagPutObject
-  tagResources <- MonadT.lift $ RT.updateTagResources tags
+  tagPutObjs :: [TT.TagPut] <- CU.extractData TT.validTagPutObject
+  updatedTags <- MonadT.lift $ RT.updateTags tagPutObjs
+  let tagResources = TM.docMulti updatedTags
   Scotty.json tagResources
 
 
@@ -84,13 +91,15 @@ putBatch = do
 
 deleteBatch :: I.ActionA
 deleteBatch = do
-  tags :: [Int] <- CU.extractData undefined
-  tagResources <- MonadT.lift $ RT.deleteTagResources tags
-  Scotty.json tagResources
+  tagIds :: [Int] <- CU.extractData CU.deleteBatchExample
+  totalDeleted <- MonadT.lift $ RT.deleteTags tagIds
+  let tagMetaInfo :: TD.MaybeResource TT.Tag = TM.metaDocFromInt totalDeleted
+  Scotty.json tagMetaInfo
 
 
 delete :: I.ActionA
 delete = do
-  tagId' <- Scotty.param "id"
-  tagResource <- MonadT.lift $ RT.deleteTagResource tagId'
-  either Scotty.json Scotty.json tagResource
+  tagId <- Scotty.param "id"
+  totalDeleted <- MonadT.lift $ RT.deleteTag tagId
+  let tagMetaInfo :: TD.MaybeResource TT.Tag = TM.metaDocFromInt totalDeleted
+  either Scotty.json Scotty.json tagMetaInfo
