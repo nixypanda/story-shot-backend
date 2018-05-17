@@ -72,7 +72,7 @@ put :: I.ActionA
 put = do
   tagId :: Int <- Scotty.param "id"
   tagInsertObj :: TT.TagInsert <- CU.extractData TT.validTagInsertObject
-  let tag'' = TT.mkTagPut tagId (TT.tagName tagInsertObj) (TT.tagGenre tagInsertObj)
+  let tag'' = TT.mkTagPut tagId (TT.tagName tagInsertObj)
   maybeUpdatedTag <- MonadT.lift $ RT.updateTag tag''
   let tagResource = TM.docOrError maybeUpdatedTag
   either Scotty.json Scotty.json tagResource

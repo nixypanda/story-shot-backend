@@ -51,7 +51,6 @@ import qualified Type.Duration as TD
 import qualified Type.Genre as TG
 import qualified Type.Tag as TT
 import qualified Type.Author as TA
-import qualified Type.AppError as TAe
 
 
 

@@ -17,9 +17,7 @@ module Resource.Tag
 
 import qualified Init as I
 import qualified Type.Pagination as TP
-import qualified Type.Doc as TD
 import qualified Type.Tag as TT
-import qualified Type.Meta as TM
 import qualified Storage.Tag as ST
 
 
