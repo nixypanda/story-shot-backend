@@ -21,7 +21,6 @@ library
 
                      , Init
                      , Environment
-                     , Type.Duration
                      , Type.Genre
                      , Type.Story
                      , Type.Tag

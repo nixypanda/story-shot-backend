@@ -1,4 +1,3 @@
-CREATE TYPE Duration AS ENUM ('SMALL', 'MEDIUM', 'LONG');
 CREATE TYPE Genre AS ENUM ('FICTION', 'NON-FICTION');
 
 CREATE TABLE tags(
@@ -27,7 +26,6 @@ CREATE TABLE users(
 CREATE TABLE stories(
   id         SERIAL PRIMARY KEY,
   title      VARCHAR(50)                   NOT NULL,
-  duration   Duration                      NOT NULL,
   times_read INT                           NOT NULL DEFAULT 0,
   stars      INT,
   genre      Genre                         NOT NULL,

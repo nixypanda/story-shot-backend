@@ -45,7 +45,6 @@ import qualified Opaleye as O
 
 import qualified Class.Resource as CR
 import qualified Type.Or as TO
-import qualified Type.Duration as TD
 import qualified Type.Genre as TG
 import qualified Type.Tag as TT
 import qualified Type.Author as TA
@@ -54,10 +53,9 @@ import qualified Type.Author as TA
 
 -- Ploymorphic Types
 
-data Story' storyID title duration authors timesRead stars genre tags story createdAt updatedAt = Story
+data Story' storyID title authors timesRead stars genre tags story createdAt updatedAt = Story
   { _storyID :: storyID
   , _title :: title
-  , _duration :: duration
   , _authors :: authors
   , _timesRead :: timesRead
   , _stars :: stars
@@ -69,10 +67,9 @@ data Story' storyID title duration authors timesRead stars genre tags story crea
   } deriving (Eq, Show, Generics.Generic)
 
 
-data PGStory' storyID title duration timesRead stars genre story createdAt updatedAt = PGStory
+data PGStory' storyID title timesRead stars genre story createdAt updatedAt = PGStory
   { _pgStoryID :: storyID
   , _pgTitle :: title
-  , _pgDuration :: duration
   , _pgTimesRead :: timesRead
   , _pgStars :: stars
   , _pgGenre :: genre
@@ -85,7 +82,6 @@ data PGStory' storyID title duration timesRead stars genre story createdAt updat
 type Story = Story'
   Int
   Text.Text
-  TD.Duration
   (TO.Or [TA.AuthorS] [TA.Author])
   Int
   Int
@@ -95,16 +91,15 @@ type Story = Story'
   DT.UTCTime
   DT.UTCTime
 
-type StoryS = Story' Int () () () () () () () () () ()
+type StoryS = Story' Int () () () () () () () () ()
 
-type StoryPut    = Story' Int (Maybe Text.Text) () (Maybe Int) (Maybe Int) (Maybe Int) (Maybe TG.Genre) (Maybe [Int]) (Maybe Text.Text) () ()
-type StoryPut'   = Story' ()  (Maybe Text.Text) () (Maybe Int) (Maybe Int) (Maybe Int) (Maybe TG.Genre) (Maybe [Int]) (Maybe Text.Text) () ()
-type StoryInsert = Story' ()  Text.Text         () Int         ()          ()          TG.Genre         [Int]         Text.Text         () ()
+type StoryPut    = Story' Int (Maybe Text.Text) (Maybe Int) (Maybe Int) (Maybe Int) (Maybe TG.Genre) (Maybe [Int]) (Maybe Text.Text) () ()
+type StoryPut'   = Story' ()  (Maybe Text.Text) (Maybe Int) (Maybe Int) (Maybe Int) (Maybe TG.Genre) (Maybe [Int]) (Maybe Text.Text) () ()
+type StoryInsert = Story' ()  Text.Text         Int         ()          ()          TG.Genre         [Int]         Text.Text         () ()
 
-type PGStory   = PGStory' Int Text.Text TD.Duration Int Int TG.Genre Text.Text DT.UTCTime DT.UTCTime
+type PGStory   = PGStory' Int Text.Text Int Int TG.Genre Text.Text DT.UTCTime DT.UTCTime
 type StoryRead = PGStory'
   (O.Column O.PGInt4)
-  (O.Column O.PGText)
   (O.Column O.PGText)
   (O.Column O.PGInt4)
   (O.Column O.PGInt4)
@@ -115,7 +110,6 @@ type StoryRead = PGStory'
 
 type StoryWrite = PGStory'
   (Maybe (O.Column O.PGInt4))
-  (O.Column O.PGText)
   (O.Column O.PGText)
   (O.Column O.PGInt4)
   (O.Column O.PGInt4)
@@ -149,7 +143,6 @@ storyTable = O.Table "stories" $ pStory
   PGStory
     { _pgStoryID = O.optional "id"
     , _pgTitle = O.required "title"
-    , _pgDuration = O.required "duration"
     , _pgTimesRead = O.required "times_read"
     , _pgStars = O.required "stars"
     , _pgGenre = O.required "genre"
@@ -162,18 +155,11 @@ storyTable = O.Table "stories" $ pStory
 
 -- Some Helpers
 
-durationFromStoryLen :: Text.Text -> TD.Duration
-durationFromStoryLen s
-  | Text.length s < 500 = TD.Short
-  | Text.length s < 5000 = TD.Medium
-  | otherwise = TD.Long
-
 
 mkStoryFromDB :: PGStory -> TO.Or [TA.AuthorS] [TA.Author] -> TO.Or [TT.TagS] [TT.Tag] -> Story
 mkStoryFromDB PGStory{..} author' tags' = Story
   { _storyID = _pgStoryID
   , _title = _pgTitle
-  , _duration = _pgDuration
   , _authors = author'
   , _timesRead = _pgTimesRead
   , _stars = _pgStars
@@ -188,7 +174,6 @@ mkLinkedStory :: PGStory -> TO.Or [TA.AuthorS] [TA.Author] -> TO.Or [TT.TagS] [T
 mkLinkedStory PGStory{..} authors tags = Story
   { _storyID = _pgStoryID
   , _title = _pgTitle
-  , _duration = _pgDuration
   , _authors = authors
   , _timesRead = _pgTimesRead
   , _stars = _pgStars
@@ -204,7 +189,6 @@ mkStoryWrite :: StoryInsert -> StoryWrite
 mkStoryWrite Story{..} = PGStory
   { _pgStoryID = Nothing
   , _pgTitle = O.constant _title
-  , _pgDuration = O.constant $ durationFromStoryLen _story
   , _pgTimesRead = O.constant (0 :: Int)
   , _pgStars = O.constant (0 :: Int)
   , _pgGenre = O.constant _genre
@@ -218,7 +202,6 @@ mkStoryWrite' :: StoryPut -> StoryRead -> StoryWrite
 mkStoryWrite' Story{..} PGStory{..} = PGStory
   { _pgStoryID = Just $ O.constant _storyID
   , _pgTitle = maybe _pgTitle O.constant _title
-  , _pgDuration = maybe _pgDuration O.constant $ fmap durationFromStoryLen _story
   , _pgTimesRead = maybe _pgTimesRead O.constant _timesRead
   , _pgStars = maybe _pgStars O.constant _stars
   , _pgGenre = maybe _pgGenre O.constant _genre
@@ -233,7 +216,6 @@ mkStoryPut storyId Story{..} = Story
   { _storyID = storyId
   , _title = _title
   , _authors = _authors
-  , _duration = ()
   , _timesRead = _timesRead
   , _stars = _stars
   , _genre = _genre
@@ -244,7 +226,7 @@ mkStoryPut storyId Story{..} = Story
   }
   
 
-storyID :: Story' Int b c d e f g h i j k -> Int
+storyID :: Story' Int b c d e f g h i j -> Int
 storyID = _storyID
 
 
@@ -252,11 +234,11 @@ tagIDs :: StoryInsert -> [Int]
 tagIDs = _tags
 
 
-pgStoryID :: PGStory' Int b c d e f g h i -> Int
+pgStoryID :: PGStory' Int b c d e f g h -> Int
 pgStoryID = _pgStoryID
 
 
-storyColID :: PGStory' (O.Column O.PGInt4) b c d e f g h i -> O.Column O.PGInt4
+storyColID :: PGStory' (O.Column O.PGInt4) b c d e f g h -> O.Column O.PGInt4
 storyColID = _pgStoryID
 
 
@@ -267,7 +249,6 @@ instance Aeson.ToJSON Story where
   toJSON Story{..} = Aeson.object
     [ "id" .= _storyID
     , "title" .= _title
-    , "duration" .= _duration
     , "authors" .= _authors
     , "tags" .= _tags
     , "read-count" .= _timesRead
@@ -293,7 +274,6 @@ instance Aeson.FromJSON StoryInsert where
   parseJSON = Aeson.withObject "story" $ \o -> Story
       <$> pure ()
       <*> o .: "title"
-      <*> pure ()
       <*> o .: "authors"
       <*> pure ()
       <*> pure ()
@@ -308,7 +288,6 @@ instance Aeson.FromJSON StoryPut where
   parseJSON = Aeson.withObject "story" $ \o -> Story
       <$> o .: "id"
       <*> o .: "title"
-      <*> pure ()
       <*> o .: "authors"
       <*> o .: "read-count"
       <*> o .: "stars"
@@ -323,7 +302,6 @@ instance Aeson.FromJSON StoryPut' where
   parseJSON = Aeson.withObject "story" $ \o -> Story
       <$> pure ()
       <*> o .: "title"
-      <*> pure ()
       <*> o .: "authors"
       <*> o .: "read-count"
       <*> o .: "stars"
