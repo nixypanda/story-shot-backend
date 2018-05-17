@@ -21,10 +21,9 @@ import qualified Data.Text as Text
 
 import qualified Init as I
 import qualified Class.Includes as CI
+import qualified Class.Resource as CR
 import qualified Type.Pagination as TP
-import qualified Type.Meta as TM
 import qualified Type.Or as Or
-import qualified Type.Doc as TD
 import qualified Type.User as TU
 import qualified Type.Author as TA
 import qualified Type.AppError as TAe
@@ -64,15 +63,10 @@ getUser sid includes = do
   case mstory of
     Nothing      -> return Nothing
     Just pguser -> do
-      muser <- LL.fromPG
-        TU.mkLinkedUser
-        [(IAuthor, SA.getAuthor, TA.mkAuthorS, TU.userAuthorID pguser)]
-        []
-        includes
-        pguser
-      case muser of
+      mauthor <- LL.getResourceForResource includes (IAuthor, SA.getAuthor, TA.mkAuthorS, TU.userAuthorID pguser)
+      case mauthor of
         Nothing -> return Nothing
-        Just user -> return $ Just user
+        Just author -> return . Just $ TU.mkLinkedUser pguser author
 
 
 
@@ -88,18 +82,16 @@ _linkAll _ _ _ = error "Undefined is not a function"
 
 
 _fromPGUsers :: [UserIncludes] -> [TU.PGUser] -> I.AppT [TU.User]
-_fromPGUsers includes users =
+_fromPGUsers includes users = do
   let
     userIDs = map TU.pgUserID users
     authorIDs = map TU.userAuthorID users
     userAuthorIDMap = M.fromList $ zip userIDs authorIDs
-  in
-    LL.fromPGs
-      TU.mkLinkedUser
-      [(IAuthor, SA.getMultiAuthors, TA.mkAuthorS, userAuthorIDMap)]
-      []
-      includes
-      users
+  authors <- LL.getResourceForResources includes (IAuthor, SA.getMultiAuthors, TA.mkAuthorS, userAuthorIDMap)
+  let
+    mkLinkedResource pg = TU.mkLinkedUser pg (LL.getResource pid authors)
+      where pid = CR.urid pg
+  return $ fmap mkLinkedResource users
 
 
 -- UPDATE

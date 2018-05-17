@@ -108,15 +108,14 @@ instance CR.LinkedResource User where
   lrid = _userID
 
 
-mkLinkedUser :: PGUser -> [TO.Or TA.AuthorS TA.Author] -> [t1] -> User
-mkLinkedUser PGUser{..} [author'] [] = User
+mkLinkedUser :: PGUser -> TO.Or TA.AuthorS TA.Author -> User
+mkLinkedUser PGUser{..} author' = User
   { _userID = _pgUserID
     , _userName = _pgUserName
     , _userAuthor = author'
     , _createdAt = _pgCreatedAt
     , _updatedAt = _pgUpdatedAt
   }
-mkLinkedUser _ _ _ = error "Undefined is not a function"
 
 
 -- Magic

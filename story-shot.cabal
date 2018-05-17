@@ -28,6 +28,7 @@ library
                      , Type.Author
                      , Type.User
                      , Type.StoryTag
+                     , Type.StoryAuthor
                      , Type.Pagination
                      , Type.Doc
                      , Type.AppError

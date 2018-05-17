@@ -18,20 +18,19 @@ module Resource.Story
 
 
 import qualified Control.Monad.IO.Class as MIO
-import qualified Data.Map as M
 
 import qualified Data.Text as Text
 import qualified Data.Random as Rand
 
 import qualified Init as I
 import qualified Class.Includes as CI
+import qualified Class.Resource as CR
 import qualified Type.Pagination as TP
 import qualified Type.AppError as TAe
 import qualified Type.Story as TS
 import qualified Type.Author as TA
 import qualified Type.Tag as TT
 import qualified Storage.Story as SS
-import qualified Storage.Author as SA
 import qualified Library.Link as LL
 
 
@@ -86,28 +85,23 @@ _fromMPGStory includes mstory =
 
 
 _fromPGStory :: [StoryIncludes] -> TS.PGStory -> I.AppT (Maybe TS.Story)
-_fromPGStory includes pgstory =
-  LL.fromPG
-    TS.mkLinkedStory
-    [(IAuthor, SA.getAuthor, TA.mkAuthorS, TS.storyAuthorID pgstory)]
-    [(ITags, SS.getTagsForStory, SS.getTagIDsForStory, TT.mkTagS, TS.pgStoryID pgstory)]
-    includes
-    pgstory
+_fromPGStory includes pgstory = do
+  authors <- LL.getResourceListForResource includes (IAuthor, SS.getAuthorsForStory, SS.getAuthorIDsForStory, TA.mkAuthorS, TS.pgStoryID pgstory)
+  tags    <- LL.getResourceListForResource includes (ITags,   SS.getTagsForStory,    SS.getTagIDsForStory,    TT.mkTagS,    TS.pgStoryID pgstory)
+  return . Just $ TS.mkLinkedStory pgstory authors tags
+
 
 
 _fromPGStories :: [StoryIncludes] -> [TS.PGStory] -> I.AppT [TS.Story]
-_fromPGStories includes stories =
+_fromPGStories includes stories = do
   let
-    storyIDs = map TS.pgStoryID stories
-    authorIDs = map TS.storyAuthorID stories
-    storyAuthorIDMap = M.fromList $ zip storyIDs authorIDs
-  in
-    LL.fromPGs
-      TS.mkLinkedStory
-      [(IAuthor, SA.getMultiAuthors, TA.mkAuthorS, storyAuthorIDMap)]
-      [(ITags, SS.getTagsForStories, SS.getTagIDsForStories, fmap TS.pgStoryID stories)]
-      includes
-      stories
+    pgids = fmap TS.pgStoryID stories
+  authors <- LL.getResourceListForResources includes (IAuthor, SS.getAuthorsForStories, SS.getAuthorIDsForStories, pgids)
+  tags    <- LL.getResourceListForResources includes (ITags,   SS.getTagsForStories,    SS.getTagIDsForStories,    pgids)
+  let
+    mkLinkedResource pg = TS.mkLinkedStory pg (LL.getResources pid authors) (LL.getResources pid tags)
+      where pid = CR.urid pg
+  return $ fmap mkLinkedResource stories
 
 
 
