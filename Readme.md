@@ -80,4 +80,8 @@ machine):
 - [ ] Transaction Blocks
 - [x] DB Connection Pooling
 - [x] Pagination
-- [ ] Abstract Metadata info for all resources
+- [x] Abstract Metadata info for all resources
+- [x] Session Creation
+- [ ] Session Expiry
+- [ ] Microservice: Tag analyser (Uses NLP to figure out tags for a story)
+- [ ] Microservice: Story Recommender (Recommends stories based on previous reads)

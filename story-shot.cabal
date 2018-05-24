@@ -16,7 +16,6 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
-                     , Class.Includes
                      , Class.Resource
 
                      , Init
@@ -26,6 +25,7 @@ library
                      , Type.Tag
                      , Type.Author
                      , Type.User
+                     , Type.Session
                      , Type.StoryTag
                      , Type.StoryAuthor
                      , Type.Pagination
@@ -33,14 +33,17 @@ library
                      , Type.AppError
                      , Type.Or
                      , Type.Meta
+                     , Type.Include
 
                      , Storage.Utils
+                     , Storage.Session
                      , Storage.Tag
                      , Storage.Story
                      , Storage.Author
                      , Storage.User
 
                      , Resource.Tag
+                     , Resource.Session
                      , Resource.Story
                      , Resource.Author
                      , Resource.User
@@ -48,19 +51,25 @@ library
                      , Controller.Basic
                      , Controller.Tag
                      , Controller.Story
+                     , Controller.Session
                      , Controller.Author
                      , Controller.User
                      , Controller.Utils
 
                      , Library.Link
+                     , Library.Auth
 
                      , Utils
   build-depends:       base >= 4.7 && < 5
                      -- json parsing library
                      , aeson
+                     , attoparsec
+                     , base64-bytestring
                      , unordered-containers
+                     , bytestring
                      , containers
                      , json-api
+                     , bcrypt
                      , product-profunctors
                      , opaleye
                      , mtl

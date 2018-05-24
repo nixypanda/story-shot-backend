@@ -17,9 +17,7 @@ module Resource.Author
 
 import qualified Init as I
 import qualified Type.Pagination as TP
-import qualified Type.Doc as TD
 import qualified Type.Author as TA
-import qualified Type.Meta as TM
 import qualified Storage.Author as SA
 
 

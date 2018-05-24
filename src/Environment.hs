@@ -6,6 +6,9 @@ module Environment
   , readEnv
   ) where
 
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
+
 import qualified Database.PostgreSQL.Simple as PGS
 
 import qualified Utils
@@ -22,7 +25,13 @@ data EnvVars = EnvVars
   { dbConfig :: PGS.ConnectInfo
   , appPort :: Int
   , environ :: Environment
+  , dbPassSalt :: B.ByteString
   }
+
+
+getStaticSalt :: IO B.ByteString
+getStaticSalt =
+  BC.pack <$> Utils.fromMaybeEnv "510ry5h01" "STATIC_SALT"
 
 
 getEnvironment :: IO Environment
@@ -46,3 +55,4 @@ readEnv = EnvVars
   <$> getDBConfig
   <*> Utils.fromMaybeEnv 8081 "SCOTTY_PORT"
   <*> getEnvironment
+  <*> getStaticSalt

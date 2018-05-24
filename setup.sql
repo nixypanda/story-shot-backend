@@ -16,9 +16,20 @@ CREATE TABLE authors(
 );
 
 CREATE TABLE users(
+  id          SERIAL PRIMARY KEY,
+  username    VARCHAR(100),
+  displayname VARCHAR(100),
+  password    bytea,
+  author      INT  REFERENCES authors (id),
+  salt        bytea,
+  created_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE sessions(
   id         SERIAL PRIMARY KEY,
-  name       VARCHAR(100),
-  author     INT  REFERENCES authors (id),
+  session_id VARCHAR(256),
+  user_      INT REFERENCES users (id),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

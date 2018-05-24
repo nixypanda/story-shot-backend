@@ -17,7 +17,6 @@ module Controller.Author
 
 import qualified Control.Monad.Trans as MonadT
 
-import qualified Data.Aeson as DA
 import qualified Web.Scotty.Trans as Scotty
 
 import qualified Init as I

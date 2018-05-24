@@ -12,14 +12,26 @@ import qualified Control.Monad.Trans.Reader as ReaderTrans
 
 import qualified Network.Wai.Middleware.Cors as WaiCORS
 import qualified Web.Scotty.Trans as Scotty
+import qualified Network.Wai as WAI
 
 import qualified Controller.Basic as CB
 import qualified Controller.Author as AC
 import qualified Controller.User as UC
 import qualified Controller.Tag as TC
 import qualified Controller.Story as SC
+import qualified Controller.Session as SessionC
 
 import qualified Init as I
+
+
+corsPolicy :: WaiCORS.CorsResourcePolicy
+corsPolicy = WaiCORS.simpleCorsResourcePolicy
+  { WaiCORS.corsRequestHeaders = ["Authorization"]
+  }
+
+
+corsMiddleware :: WAI.Middleware
+corsMiddleware = WaiCORS.cors $ const $ Just corsPolicy
 
 
 application :: I.Config -> I.ScottyA
@@ -27,7 +39,7 @@ application c = do
   let e = I.environment c
 
   Scotty.middleware $ I.loggingM e
-  Scotty.middleware WaiCORS.simpleCors
+  Scotty.middleware corsMiddleware
   Scotty.defaultHandler $ CB.defaultH e
 
   Scotty.get "/" CB.indexRoute
@@ -58,13 +70,14 @@ application c = do
   Scotty.delete "/author"     AC.deleteBatch
   Scotty.delete "/author/:id" AC.delete
 
-  Scotty.post   "/user"     UC.post
-  Scotty.get    "/user"     UC.getBatch
-  Scotty.get    "/user/:id" UC.get
-  Scotty.put    "/user"     UC.putBatch
-  Scotty.put    "/user/:id" UC.put
-  Scotty.delete "/user"     UC.deleteBatch
-  Scotty.delete "/user/:id" UC.delete
+  Scotty.post   "/user"       UC.post
+  Scotty.get    "/user"       UC.getBatch
+  Scotty.get    "/user/:id"   UC.get
+  Scotty.put    "/user"       UC.putBatch
+  Scotty.put    "/user/:id"   UC.put
+  Scotty.delete "/user"       UC.deleteBatch
+  Scotty.delete "/user/:id"   UC.delete
+  Scotty.get    "/user/login" SessionC.login
 
   Scotty.notFound CB.notFoundA
 

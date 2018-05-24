@@ -23,6 +23,7 @@ module Init
 import qualified Control.Monad.Reader as ReaderTrans
 
 import qualified Data.Default as Default
+import qualified Data.ByteString as B
 import qualified Data.Pool as Pool
 import qualified Data.Text.Lazy as LazyText
 import qualified Database.PostgreSQL.Simple as PGS
@@ -49,6 +50,7 @@ data Config = Config
   { connPool :: Pool.Pool PGS.Connection
   , port :: Int
   , environment :: E.Environment
+  , staticSalt :: B.ByteString
   }
 
 
@@ -62,6 +64,7 @@ getConfig = do
     { connPool = pgPool
     , port = E.appPort env
     , environment = E.environ env
+    , staticSalt = E.dbPassSalt env
     }
 
 

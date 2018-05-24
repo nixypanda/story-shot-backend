@@ -27,7 +27,7 @@ import qualified Init as I
 import qualified Type.Pagination as TP
 import qualified Type.Doc as TD
 import qualified Controller.Basic as CB
-import qualified Class.Includes as CI
+import qualified Type.Include as Include
 import qualified Type.AppError as TAe
 
 
@@ -49,9 +49,9 @@ extractData validObjExample =
   Scotty.jsonData `Scotty.rescue` CB.invalidPayload validObjExample
 
 
-extractIncludes :: CI.Includes a => Scotty.ActionT I.Error I.AppT (Either TAe.ClientError [a])
+extractIncludes :: Scotty.ActionT I.Error I.AppT (Either TAe.ClientError [Include.Include])
 extractIncludes =
-  (CI.fromCSV <$> Scotty.param "includes") `Scotty.rescue` (\_ -> return $ Right [])
+  (Include.fromCSV <$> Scotty.param "include") `Scotty.rescue` (\_ -> return $ Right [])
 
 
 deleteBatchExample :: Aeson.Value
