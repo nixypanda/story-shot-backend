@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
@@ -7,46 +6,25 @@
 module Controller.Types.Author where
 
 
+import Prelude hiding (id)
 import           Data.Aeson   ((.=))
 import           Data.Monoid  ((<>))
 
 import qualified Data.Time    as DT
-import qualified GHC.Generics as Generics
 
 import qualified Data.Aeson   as Aeson
 import qualified Data.Text    as Text
-
-
-newtype AuthorInsert = AuthorInsert
-    { name :: Text.Text
-    } deriving (Eq, Show, Generics.Generic)
-
-newtype AuthorBase = AuthorBase
-    { id :: Int
-    } deriving (Eq, Show, Generics.Generic)
-
-data AuthorPut = AuthorPut
-    { id      :: Int
-    , newName :: Text.Text
-    } deriving (Eq, Show, Generics.Generic)
-
-
-data AuthorResource = AuthorResource
-    { id        :: Int
-    , name      :: Text.Text
-    , createdAt :: DT.UTCTime
-    , updatedAt :: DT.UTCTime
-    } deriving (Eq, Show, Generics.Generic)
+import Domain.Types (AuthorPut, AuthorInsert, AuthorBase(..), Author(..))
 
 
 instance Aeson.FromJSON AuthorPut
 instance Aeson.FromJSON AuthorInsert
 instance Aeson.FromJSON AuthorBase
-instance Aeson.FromJSON AuthorResource
+instance Aeson.FromJSON Author
 
 
-instance Aeson.ToJSON AuthorResource where
-  toJSON AuthorResource{..} = Aeson.object
+instance Aeson.ToJSON Author where
+  toJSON Author{..} = Aeson.object
     [ "id" .= id
     , "name" .= name
     , "created-at" .= createdAt
