@@ -23,6 +23,7 @@ library
                      , Controller.Types
 
                      , Storage.Types
+                     , Storage.Repos
 
                      , Init
                      , Environment

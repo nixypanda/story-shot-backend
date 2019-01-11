@@ -13,8 +13,9 @@ module Storage.Types.Author
   , AuthorWrite
   , AuthorRead
   , authorTable
-  , mkAuthorWrite
-  , mkAuthorWrite'
+  , fromAuthorInsert
+  , fromAuthorPut
+  , toAuthor
   , authorID
   , authorColID
   , authorName
@@ -31,7 +32,7 @@ import qualified Data.Profunctor.Product.TH as ProductProfunctor
 import qualified Data.Text                  as Text
 import qualified Opaleye                    as O
 
-import           Domain.Types               (AuthorInsert (..), AuthorPut (..))
+import           Domain.Types               (AuthorInsert (..), AuthorPut (..), Author(..))
 
 
 
@@ -79,8 +80,8 @@ authorTable = O.Table "authors" $
 
 -- Some Helpers
 
-mkAuthorWrite :: AuthorPut -> AuthorWrite
-mkAuthorWrite AuthorPut{..} = AuthorModel
+fromAuthorPut :: AuthorPut -> AuthorWrite
+fromAuthorPut AuthorPut{..} = AuthorModel
   { _authorID = O.constant $ Just id
   , _authorName = O.constant name
   , _createdAt = Nothing
@@ -88,13 +89,22 @@ mkAuthorWrite AuthorPut{..} = AuthorModel
   }
 
 
-mkAuthorWrite' :: AuthorInsert -> AuthorWrite
-mkAuthorWrite' AuthorInsert{..} = AuthorModel
+fromAuthorInsert :: AuthorInsert -> AuthorWrite
+fromAuthorInsert AuthorInsert{..} = AuthorModel
   { _authorID = Nothing
   , _authorName = O.constant name
   , _createdAt = Nothing
   , _updatedAt = Nothing
   }
+
+
+toAuthor :: AuthorModel -> Author
+toAuthor AuthorModel{..} = Author
+    { id = _authorID
+    , name = _authorName
+    , createdAt = _createdAt
+    , updatedAt = _updatedAt
+    }
 
 
 authorID :: AuthorModel' Int b c d -> Int
