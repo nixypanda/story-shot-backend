@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE Arrows #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Arrows              #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 
 module Storage.Author
@@ -20,16 +20,16 @@ module Storage.Author
   ) where
 
 
-import qualified Control.Arrow as Arrow
-import qualified Data.Int as DI
-import qualified Data.Maybe as DM
+import qualified Control.Arrow   as Arrow
+import qualified Data.Int        as DI
+import qualified Data.Maybe      as DM
 
-import qualified Opaleye as O
+import qualified Opaleye         as O
 
+import qualified Init            as I
+import qualified Storage.Utils   as SU
+import qualified Type.Author     as TA
 import qualified Type.Pagination as TP
-import qualified Type.Author as TA
-import qualified Init as I
-import qualified Storage.Utils as SU
 
 
 

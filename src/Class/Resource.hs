@@ -1,5 +1,5 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings       #-}
 
 
 module Class.Resource
@@ -10,14 +10,14 @@ module Class.Resource
   ) where
 
 
-import Data.Monoid ((<>))
+import           Data.Monoid ((<>))
 
-import qualified Data.Map as M
-import qualified Data.Text as Text
-import qualified Data.Time as DT
+import qualified Data.Map    as M
+import qualified Data.Text   as Text
+import qualified Data.Time   as DT
 
-import qualified TextShow as TS
-import qualified Type.Or as Or
+import qualified TextShow    as TS
+import qualified Type.Or     as Or
 
 
 class Resource r where

@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE OverloadedStrings   #-}
 
 
 module Resource.Author
@@ -15,10 +15,10 @@ module Resource.Author
   ) where
 
 
-import qualified Init as I
+import qualified Init            as I
+import qualified Storage.Author  as SA
+import qualified Type.Author     as TA
 import qualified Type.Pagination as TP
-import qualified Type.Author as TA
-import qualified Storage.Author as SA
 
 
 

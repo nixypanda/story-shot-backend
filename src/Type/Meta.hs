@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 
@@ -7,15 +7,15 @@ module Type.Meta
   where
 
 
-import qualified GHC.Generics as Generics
-import qualified Data.Int as DInt
+import qualified Data.Int        as DInt
+import qualified GHC.Generics    as Generics
 
-import qualified Data.Aeson as Aeson
+import qualified Data.Aeson      as Aeson
 
-import qualified Class.Resource as CR
-import qualified Type.Doc as TD
+import qualified Class.Resource  as CR
+import qualified Type.AppError   as TAe
+import qualified Type.Doc        as TD
 import qualified Type.Pagination as TP
-import qualified Type.AppError as TAe
 
 
 data MetaData
@@ -26,7 +26,7 @@ data MetaData
 
 instance TD.MetaObject MetaData where
   typeName (CursorInfo _) = "cursor"
-  typeName (CountInfo _) = "count"
+  typeName (CountInfo _)  = "count"
 
 
 instance Aeson.ToJSON MetaData where
@@ -72,5 +72,5 @@ docMeta = indexDoc [] . TD.mkMeta . CountInfo
 
 
 docOrError :: Maybe r -> Either (TD.ErrorDoc r) (TD.Doc r)
-docOrError Nothing = Left $ TAe.docError TAe.ResourceNotFound
+docOrError Nothing   = Left $ TAe.docError TAe.ResourceNotFound
 docOrError (Just at) = Right $ indexDoc' at

@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 
 module Type.Author
@@ -30,18 +30,18 @@ module Type.Author
   ) where
 
 
-import Data.Monoid ((<>))
-import Data.Aeson ((.=), (.:))
+import           Data.Aeson                 ((.:), (.=))
+import           Data.Monoid                ((<>))
 
-import qualified Data.Time as DT
-import qualified GHC.Generics as Generics
+import qualified Data.Time                  as DT
+import qualified GHC.Generics               as Generics
 
-import qualified Data.Text as Text
+import qualified Data.Aeson                 as Aeson
 import qualified Data.Profunctor.Product.TH as ProductProfunctor
-import qualified Data.Aeson as Aeson
-import qualified Opaleye as O
+import qualified Data.Text                  as Text
+import qualified Opaleye                    as O
 
-import qualified Class.Resource as CR
+import qualified Class.Resource             as CR
 
 
 
@@ -49,10 +49,10 @@ import qualified Class.Resource as CR
 
 data Author' authorID authorName createdAt updatedAt =
   Author
-    { _authorID :: authorID
+    { _authorID   :: authorID
     , _authorName :: authorName
-    , _createdAt :: createdAt
-    , _updatedAt :: updatedAt
+    , _createdAt  :: createdAt
+    , _updatedAt  :: updatedAt
     } deriving (Eq, Show, Generics.Generic)
 
 

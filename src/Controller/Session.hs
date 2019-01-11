@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 
@@ -8,19 +8,19 @@ module Controller.Session
   ) where
 
 
-import qualified Control.Monad.Trans as MonadT
+import qualified Control.Monad.Trans       as MonadT
 
-import qualified Web.Scotty.Trans as Scotty
 import qualified Network.HTTP.Types.Status as HTTPStatus
+import qualified Web.Scotty.Trans          as Scotty
 
-import qualified Init as I
-import qualified Type.Meta as TM
-import qualified Type.Doc as TD
-import qualified Type.Session as TS
-import qualified Type.AppError as TAe
-import qualified Resource.Session as RS
-import qualified Controller.Utils as CU
-import qualified Library.Auth as Auth
+import qualified Controller.Utils          as CU
+import qualified Init                      as I
+import qualified Library.Auth              as Auth
+import qualified Resource.Session          as RS
+import qualified Type.AppError             as TAe
+import qualified Type.Doc                  as TD
+import qualified Type.Meta                 as TM
+import qualified Type.Session              as TS
 
 
 -- TODO: Monad Transformers to clean up this repeted shit

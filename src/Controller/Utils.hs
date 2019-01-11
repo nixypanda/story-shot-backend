@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 
@@ -12,23 +12,23 @@ module Controller.Utils
   ) where
 
 
-import Data.Aeson ((.=))
+import           Data.Aeson          ((.=))
 
-import qualified Data.Default as Def
-import qualified Data.Either.Utils as EitherUtils
+import qualified Data.Default        as Def
+import qualified Data.Either.Utils   as EitherUtils
 
-import qualified Data.Aeson as Aeson
-import qualified Data.Text as Text
-import qualified Data.Text.Lazy as LazyText
+import qualified Data.Aeson          as Aeson
+import qualified Data.Text           as Text
+import qualified Data.Text.Lazy      as LazyText
 import qualified Data.Text.Lazy.Read as LazyTextRead
-import qualified Web.Scotty.Trans as Scotty
+import qualified Web.Scotty.Trans    as Scotty
 
-import qualified Init as I
-import qualified Type.Pagination as TP
-import qualified Type.Doc as TD
-import qualified Controller.Basic as CB
-import qualified Type.Include as Include
-import qualified Type.AppError as TAe
+import qualified Controller.Basic    as CB
+import qualified Init                as I
+import qualified Type.AppError       as TAe
+import qualified Type.Doc            as TD
+import qualified Type.Include        as Include
+import qualified Type.Pagination     as TP
 
 
 cursorPagination :: [Scotty.Param] -> TP.CursorParam
@@ -62,7 +62,7 @@ deleteBatchExample = Aeson.object
 
 executeAction :: (TAe.APIError e, Monad m)
                => Either e t -> (t -> m (Either (TD.ErrorDoc a) b)) -> m (Either (TD.ErrorDoc a) b)
-executeAction (Left e) _ = return . Left $ TAe.docError e
+executeAction (Left e) _         = return . Left $ TAe.docError e
 executeAction (Right includes) f = f includes
 
 

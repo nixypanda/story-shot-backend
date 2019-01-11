@@ -1,12 +1,12 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 
 module Type.Story
@@ -32,48 +32,48 @@ module Type.Story
   ) where
 
 
-import Data.Monoid ((<>))
-import Data.Aeson ((.=), (.:))
+import           Data.Aeson                 ((.:), (.=))
+import           Data.Monoid                ((<>))
 
-import qualified Data.Time as DT
-import qualified GHC.Generics as Generics
+import qualified Data.Time                  as DT
+import qualified GHC.Generics               as Generics
 
+import qualified Data.Aeson                 as Aeson
 import qualified Data.Profunctor.Product.TH as ProductProfunctor
-import qualified Data.Text as Text
-import qualified Data.Aeson as Aeson
-import qualified Opaleye as O
+import qualified Data.Text                  as Text
+import qualified Opaleye                    as O
 
-import qualified Class.Resource as CR
-import qualified Type.Or as TO
-import qualified Type.Genre as TG
-import qualified Type.Tag as TT
-import qualified Type.Author as TA
+import qualified Class.Resource             as CR
+import qualified Type.Author                as TA
+import qualified Type.Genre                 as TG
+import qualified Type.Or                    as TO
+import qualified Type.Tag                   as TT
 
 
 
 -- Ploymorphic Types
 
 data Story' storyID title authors timesRead stars genre tags story createdAt updatedAt = Story
-  { _storyID :: storyID
-  , _title :: title
-  , _authors :: authors
+  { _storyID   :: storyID
+  , _title     :: title
+  , _authors   :: authors
   , _timesRead :: timesRead
-  , _stars :: stars
-  , _genre :: genre
-  , _tags :: tags
-  , _story :: story
+  , _stars     :: stars
+  , _genre     :: genre
+  , _tags      :: tags
+  , _story     :: story
   , _createdAt :: createdAt
   , _updatedAt :: updatedAt
   } deriving (Eq, Show, Generics.Generic)
 
 
 data PGStory' storyID title timesRead stars genre story createdAt updatedAt = PGStory
-  { _pgStoryID :: storyID
-  , _pgTitle :: title
+  { _pgStoryID   :: storyID
+  , _pgTitle     :: title
   , _pgTimesRead :: timesRead
-  , _pgStars :: stars
-  , _pgGenre :: genre
-  , _pgStory :: story
+  , _pgStars     :: stars
+  , _pgGenre     :: genre
+  , _pgStory     :: story
   , _pgCreatedAt :: createdAt
   , _pgUpdatedAt :: updatedAt
   } deriving (Eq, Show, Generics.Generic)
@@ -224,7 +224,7 @@ mkStoryPut storyId Story{..} = Story
   , _createdAt = ()
   , _updatedAt = ()
   }
-  
+
 
 storyID :: Story' Int b c d e f g h i j -> Int
 storyID = _storyID

@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 
 
 module Type.Genre
@@ -11,14 +11,14 @@ module Type.Genre
   ) where
 
 
-import qualified GHC.Generics as Generics
+import qualified GHC.Generics                         as Generics
 
-import qualified Data.Aeson as Aeson
-import qualified Data.Text as Text
-import qualified Data.Profunctor.Product.Default as ProductProfunctorDefault
-import qualified Database.PostgreSQL.Simple.ToField as PGSToField
+import qualified Data.Aeson                           as Aeson
+import qualified Data.Profunctor.Product.Default      as ProductProfunctorDefault
+import qualified Data.Text                            as Text
 import qualified Database.PostgreSQL.Simple.FromField as PGSFromField
-import qualified Opaleye as O
+import qualified Database.PostgreSQL.Simple.ToField   as PGSToField
+import qualified Opaleye                              as O
 
 
 
@@ -44,7 +44,7 @@ instance PGSFromField.FromField Genre where
 
 
 instance PGSToField.ToField Genre where
-  toField Fiction = PGSToField.toField ("FICTION" :: Text.Text)
+  toField Fiction    = PGSToField.toField ("FICTION" :: Text.Text)
   toField NonFiction = PGSToField.toField ("NON-FICTION" :: Text.Text)
 
 

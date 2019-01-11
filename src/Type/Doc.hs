@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 
@@ -6,14 +6,14 @@ module Type.Doc
   where
 
 
-import Data.Aeson ((.=))
+import           Data.Aeson          ((.=))
 
-import qualified GHC.Generics as Generics
+import qualified GHC.Generics        as Generics
 
+import qualified Data.Aeson          as DA
+import qualified Data.Default        as Default
 import qualified Data.HashMap.Strict as HM
-import qualified Data.Aeson as DA
-import qualified Data.Default as Default
-import qualified Data.Text as Text
+import qualified Data.Text           as Text
 
 
 
@@ -158,8 +158,8 @@ instance Default.Default (Error a) where
   For more information see: <http://jsonapi.org/format/#errors>
 -}
 data ErrorDoc a = ErrorDoc
-  { _error :: Error a
-  , _errorMeta  :: Maybe Meta
+  { _error     :: Error a
+  , _errorMeta :: Maybe Meta
   } deriving (Show, Eq, Generics.Generic)
 
 

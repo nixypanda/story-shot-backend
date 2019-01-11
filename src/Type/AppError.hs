@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE InstanceSigs        #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 
 
 module Type.AppError
@@ -12,18 +12,18 @@ module Type.AppError
   , docError
   ) where
 
-import Data.Monoid ((<>))
+import           Data.Monoid                ((<>))
 
-import qualified Control.Exception as Exception
-import qualified Data.Typeable as Typeable
+import qualified Control.Exception          as Exception
+import qualified Data.Typeable              as Typeable
 
-import qualified Data.Default as Default
-import qualified Data.Text as Text
-import qualified Data.Text.Encoding as TextE
+import qualified Data.Default               as Default
+import qualified Data.Text                  as Text
+import qualified Data.Text.Encoding         as TextE
 import qualified Database.PostgreSQL.Simple as PGS
-import qualified Network.HTTP.Types.Status as HTTPStatus
+import qualified Network.HTTP.Types.Status  as HTTPStatus
 
-import qualified Type.Doc as TD
+import qualified Type.Doc                   as TD
 
 
 data ClientError

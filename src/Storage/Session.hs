@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 
 module Storage.Session
@@ -11,10 +11,10 @@ module Storage.Session
 
 import qualified Control.Monad.Trans as MonadT
 
-import qualified Init as I
-import qualified Type.Session as TS
-import qualified Storage.Utils as SU
-import qualified Library.Auth as Auth
+import qualified Init                as I
+import qualified Library.Auth        as Auth
+import qualified Storage.Utils       as SU
+import qualified Type.Session        as TS
 
 
 createSessionForUser :: Int -> I.AppT TS.PGSession

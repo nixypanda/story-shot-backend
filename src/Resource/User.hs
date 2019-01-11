@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE InstanceSigs        #-}
+{-# LANGUAGE OverloadedStrings   #-}
 
 
 module Resource.User
@@ -16,18 +16,18 @@ module Resource.User
   ) where
 
 
-import qualified Data.Map as M
+import qualified Data.Map        as M
 
-import qualified Init as I
-import qualified Type.Include as Include
-import qualified Class.Resource as CR
+import qualified Class.Resource  as CR
+import qualified Init            as I
+import qualified Library.Link    as LL
+import qualified Storage.Author  as SA
+import qualified Storage.User    as SU
+import qualified Type.Author     as TA
+import qualified Type.Include    as Include
+import qualified Type.Or         as Or
 import qualified Type.Pagination as TP
-import qualified Type.Or as Or
-import qualified Type.User as TU
-import qualified Type.Author as TA
-import qualified Storage.User as SU
-import qualified Storage.Author as SA
-import qualified Library.Link as LL
+import qualified Type.User       as TU
 
 
 
@@ -63,7 +63,7 @@ getUser sid includes = do
     Just pguser -> do
       mauthor <- LL.getResourceForResource includes (Include.Author, SA.getAuthor, TA.mkAuthorS, TU.userAuthorID pguser)
       case mauthor of
-        Nothing -> return Nothing
+        Nothing     -> return Nothing
         Just author -> return . Just $ TU.mkLinkedUser pguser author
 
 

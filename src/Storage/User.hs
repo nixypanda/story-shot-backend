@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE Arrows #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Arrows              #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 
 module Storage.User
@@ -21,26 +21,26 @@ module Storage.User
   ) where
 
 
-import Opaleye ((.==), (.>))
+import           Opaleye                    ((.==), (.>))
 
-import qualified Control.Arrow as Arrow
-import qualified Control.Monad as M
-import qualified Control.Monad.Trans as MonadT
-import qualified Data.Int as DI
-import qualified Data.Maybe as DM
-import qualified Data.List as DL
+import qualified Control.Arrow              as Arrow
+import qualified Control.Monad              as M
+import qualified Control.Monad.Trans        as MonadT
 import qualified Control.Monad.Trans.Reader as ReaderTrans
+import qualified Data.Int                   as DI
+import qualified Data.List                  as DL
+import qualified Data.Maybe                 as DM
 
-import qualified Opaleye as O
-import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Encode
+import qualified Data.Text                  as Text
+import qualified Data.Text.Encoding         as Encode
+import qualified Opaleye                    as O
 
-import qualified Type.Pagination as TP
-import qualified Type.User as TU
-import qualified Type.Author as TA
-import qualified Init as I
-import qualified Storage.Utils as SU
-import qualified Library.Auth as Auth
+import qualified Init                       as I
+import qualified Library.Auth               as Auth
+import qualified Storage.Utils              as SU
+import qualified Type.Author                as TA
+import qualified Type.Pagination            as TP
+import qualified Type.User                  as TU
 
 
 -- CREATE

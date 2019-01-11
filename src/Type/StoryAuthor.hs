@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 
 module Type.StoryAuthor
@@ -22,7 +22,7 @@ module Type.StoryAuthor
 
 
 import qualified Data.Profunctor.Product.TH as ProductProfunctor
-import qualified Opaleye as O
+import qualified Opaleye                    as O
 
 
 
@@ -31,8 +31,8 @@ import qualified Opaleye as O
 data StoryAuthor' id' authorID storyID =
   StoryAuthor
     { _storyAuthorID :: id'
-    , _authorID :: authorID
-    , _storyID :: storyID
+    , _authorID      :: authorID
+    , _storyID       :: storyID
     } deriving (Eq, Show)
 
 

@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 
 module Type.Session
@@ -17,37 +17,37 @@ module Type.Session
   ) where
 
 
-import Data.Monoid ((<>))
-import Data.Aeson ((.=))
+import           Data.Aeson                 ((.=))
+import           Data.Monoid                ((<>))
 
-import qualified Data.Time as DT
-import qualified GHC.Generics as Generics
+import qualified Data.Time                  as DT
+import qualified GHC.Generics               as Generics
 
-import qualified Data.Aeson as Aeson
-import qualified Data.Text as Text
+import qualified Data.Aeson                 as Aeson
 import qualified Data.Profunctor.Product.TH as ProductProfunctor
-import qualified Opaleye as O
+import qualified Data.Text                  as Text
+import qualified Opaleye                    as O
 
-import qualified Class.Resource as CR
-import qualified Type.Or as Or
-import qualified Type.User as TU
+import qualified Class.Resource             as CR
+import qualified Type.Or                    as Or
+import qualified Type.User                  as TU
 
 
 data Session' sessionID displayID user createdAt updatedAt = Session
-  { _sessionID :: sessionID
+  { _sessionID        :: sessionID
   , _sessionDisplayID :: displayID
-  , _sessionUser :: user
-  , _createdAt :: createdAt
-  , _updatedAt :: updatedAt
+  , _sessionUser      :: user
+  , _createdAt        :: createdAt
+  , _updatedAt        :: updatedAt
   } deriving (Eq, Show, Generics.Generic)
 
 
 data PGSession' sessionID displayID user createdAt updatedAt = PGSession
-  { _pgSessionID :: sessionID
+  { _pgSessionID        :: sessionID
   , _pgSessionDisplayID :: displayID
-  , _pgSessionUser :: user
-  , _pgCreatedAt :: createdAt
-  , _pgUpdatedAt :: updatedAt
+  , _pgSessionUser      :: user
+  , _pgCreatedAt        :: createdAt
+  , _pgUpdatedAt        :: updatedAt
   } deriving (Eq, Show, Generics.Generic)
 
 

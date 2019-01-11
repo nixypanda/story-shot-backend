@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE Arrows #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE Arrows            #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 
 module Storage.Tag
@@ -18,16 +18,16 @@ module Storage.Tag
   ) where
 
 
-import qualified Control.Arrow as Arrow
-import qualified Data.Int as DI
-import qualified Data.Maybe as DM
+import qualified Control.Arrow   as Arrow
+import qualified Data.Int        as DI
+import qualified Data.Maybe      as DM
 
-import qualified Opaleye as O
+import qualified Opaleye         as O
 
-import qualified Init as I
+import qualified Init            as I
+import qualified Storage.Utils   as SU
 import qualified Type.Pagination as TP
-import qualified Type.Tag as TT
-import qualified Storage.Utils as SU
+import qualified Type.Tag        as TT
 
 
 

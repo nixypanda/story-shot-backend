@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE Arrows #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE Arrows              #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections       #-}
 
 
 module Storage.Story
@@ -27,23 +27,23 @@ module Storage.Story
   ) where
 
 
-import qualified Data.Int as DI
-import qualified Control.Arrow as Arrow
-import qualified Data.Map as M
-import qualified Data.Maybe as DM
+import qualified Control.Arrow    as Arrow
+import qualified Data.Int         as DI
+import qualified Data.Map         as M
+import qualified Data.Maybe       as DM
 
-import qualified Opaleye as O
+import qualified Opaleye          as O
 
-import qualified Init as I
-import qualified Type.Pagination as TP
-import qualified Type.Story as TS
-import qualified Type.StoryTag as TSt
+import qualified Init             as I
+import qualified Storage.Author   as SA
+import qualified Storage.Tag      as ST
+import qualified Storage.Utils    as SU
+import qualified Type.Author      as TA
+import qualified Type.Pagination  as TP
+import qualified Type.Story       as TS
 import qualified Type.StoryAuthor as TSa
-import qualified Type.Tag as TT
-import qualified Type.Author as TA
-import qualified Storage.Utils as SU
-import qualified Storage.Tag as ST
-import qualified Storage.Author as SA
+import qualified Type.StoryTag    as TSt
+import qualified Type.Tag         as TT
 
 
 
@@ -82,7 +82,7 @@ getTagIDsForStory sid = SU.runDB (tagIDsForStory sid)
 
 
 getTagsForStory :: Int -> I.AppT [TT.Tag]
-getTagsForStory sid = SU.runDB (tagsForStory sid) 
+getTagsForStory sid = SU.runDB (tagsForStory sid)
 
 
 getTagIDsForStories :: [Int] -> I.AppT (M.Map Int [TT.TagS])
@@ -90,7 +90,7 @@ getTagIDsForStories sid = fmap (map TT.mkTagS) . _toMap <$> SU.runDB (tagIDsForS
 
 
 getTagsForStories :: [Int] -> I.AppT (M.Map Int [TT.Tag])
-getTagsForStories sid = _toMap <$> SU.runDB (tagsForStories sid) 
+getTagsForStories sid = _toMap <$> SU.runDB (tagsForStories sid)
 
 
 getAuthorIDsForStory :: Int -> I.AppT [Int]
@@ -98,7 +98,7 @@ getAuthorIDsForStory sid = SU.runDB (authorIDsForStory sid)
 
 
 getAuthorsForStory :: Int -> I.AppT [TA.Author]
-getAuthorsForStory sid = SU.runDB (authorsForStory sid) 
+getAuthorsForStory sid = SU.runDB (authorsForStory sid)
 
 
 getAuthorIDsForStories :: [Int] -> I.AppT (M.Map Int [TA.AuthorS])
@@ -106,7 +106,7 @@ getAuthorIDsForStories sid = fmap (map TA.mkAuthorS) . _toMap <$> SU.runDB (auth
 
 
 getAuthorsForStories :: [Int] -> I.AppT (M.Map Int [TA.Author])
-getAuthorsForStories sid = _toMap <$> SU.runDB (authorsForStories sid) 
+getAuthorsForStories sid = _toMap <$> SU.runDB (authorsForStories sid)
 
 
 -- UPDATE

@@ -1,27 +1,27 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Lib
   ( startServer
   ) where
 
-import qualified Control.Monad.Trans.Reader as ReaderTrans
+import qualified Control.Monad.Trans.Reader  as ReaderTrans
 
+import qualified Network.Wai                 as WAI
 import qualified Network.Wai.Middleware.Cors as WaiCORS
-import qualified Web.Scotty.Trans as Scotty
-import qualified Network.Wai as WAI
+import qualified Web.Scotty.Trans            as Scotty
 
-import qualified Controller.Basic as CB
-import qualified Controller.Author as AC
-import qualified Controller.User as UC
-import qualified Controller.Tag as TC
-import qualified Controller.Story as SC
-import qualified Controller.Session as SessionC
+import qualified Controller.Author           as AC
+import qualified Controller.Basic            as CB
+import qualified Controller.Session          as SessionC
+import qualified Controller.Story            as SC
+import qualified Controller.Tag              as TC
+import qualified Controller.User             as UC
 
-import qualified Init as I
+import qualified Init                        as I
 
 
 corsPolicy :: WaiCORS.CorsResourcePolicy

@@ -1,30 +1,30 @@
 {-# OPTIONS_GHC -Wall #-}
+{-# LANGUAGE InstanceSigs      #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE InstanceSigs #-}
 
 module Resource.Session
   ( createSessionFromDetails
   ) where
 
 
-import Data.Monoid ((<>))
+import           Data.Monoid                ((<>))
 
-import qualified Data.Maybe as DM
 import qualified Control.Monad.Trans.Reader as ReaderT
-import qualified Data.ByteString as B
-import qualified Crypto.BCrypt as BCrypt
+import qualified Crypto.BCrypt              as BCrypt
+import qualified Data.ByteString            as B
+import qualified Data.Maybe                 as DM
 
-import qualified Data.Text as Text
+import qualified Data.Text                  as Text
 
-import qualified Init as I
-import qualified Type.Include as Include
-import qualified Type.Or as Or
-import qualified Type.AppError as TAe
-import qualified Type.User as TU
-import qualified Type.Session as TS
-import qualified Storage.User as SU
-import qualified Storage.Session as SS
-import qualified Resource.User as RU
+import qualified Init                       as I
+import qualified Resource.User              as RU
+import qualified Storage.Session            as SS
+import qualified Storage.User               as SU
+import qualified Type.AppError              as TAe
+import qualified Type.Include               as Include
+import qualified Type.Or                    as Or
+import qualified Type.Session               as TS
+import qualified Type.User                  as TU
 
 
 createSessionFromDetails :: [Include.Include] -> Text.Text -> B.ByteString -> I.AppT (Either TAe.ClientError TS.Session)

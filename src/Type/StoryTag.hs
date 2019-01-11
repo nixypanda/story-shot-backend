@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 
 module Type.StoryTag
@@ -22,7 +22,7 @@ module Type.StoryTag
 
 
 import qualified Data.Profunctor.Product.TH as ProductProfunctor
-import qualified Opaleye as O
+import qualified Opaleye                    as O
 
 
 
@@ -31,8 +31,8 @@ import qualified Opaleye as O
 data StoryTag' id' tagID storyID =
   StoryTag
     { _storyTagID :: id'
-    , _tagID :: tagID
-    , _storyID :: storyID
+    , _tagID      :: tagID
+    , _storyID    :: storyID
     } deriving (Eq, Show)
 
 

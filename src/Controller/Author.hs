@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 
@@ -17,15 +17,14 @@ module Controller.Author
 
 import qualified Control.Monad.Trans as MonadT
 
-import qualified Web.Scotty.Trans as Scotty
+import qualified Web.Scotty.Trans    as Scotty
 
-import qualified Init as I
-import qualified Type.Author as TA
-import qualified Type.Doc as TD
-import qualified Type.Meta as TM
-import qualified Resource.Author as RA
-import qualified Controller.Utils as CU
-
+import qualified Controller.Utils    as CU
+import qualified Init                as I
+import qualified Resource.Author     as RA
+import qualified Type.Author         as TA
+import qualified Type.Doc            as TD
+import qualified Type.Meta           as TM
 
 
 -- CREATE

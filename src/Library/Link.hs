@@ -11,16 +11,16 @@ module Library.Link
   , getResourceListForResources
   ) where
 
-import qualified Data.Map as M
-import qualified Data.Maybe as DM
+import qualified Data.Map       as M
+import qualified Data.Maybe     as DM
 
-import qualified Type.Or as Or
 import qualified Class.Resource as CR
+import qualified Type.Or        as Or
 
 
 
 _convert :: Either (M.Map k a) (M.Map k b) -> M.Map k (Or.Or a b)
-_convert (Left m) = fmap (Or.Or . Left) m
+_convert (Left m)  = fmap (Or.Or . Left) m
 _convert (Right m) = fmap (Or.Or . Right) m
 
 

@@ -2,11 +2,11 @@
 
 module Utils where
 
-import qualified Data.Maybe as DM (fromMaybe, fromJust)
+import qualified Data.Maybe         as DM (fromJust, fromMaybe)
 import qualified System.Environment as SysEnv
-import qualified Text.Read as TextRead
+import qualified Text.Read          as TextRead
 
-import qualified Network.URL as N
+import qualified Network.URL        as N
 
 
 -- Others

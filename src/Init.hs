@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards  #-}
 
 
 module Init
@@ -20,19 +20,19 @@ module Init
    I had no idea where to shove these functions/types/etc. so here it goes.
  -}
 
-import qualified Control.Monad.Reader as ReaderTrans
+import qualified Control.Monad.Reader                 as ReaderTrans
 
-import qualified Data.Default as Default
-import qualified Data.ByteString as B
-import qualified Data.Pool as Pool
-import qualified Data.Text.Lazy as LazyText
-import qualified Database.PostgreSQL.Simple as PGS
-import qualified Network.Wai.Handler.Warp as NetworkHandler
-import qualified Network.Wai as Wai
+import qualified Data.ByteString                      as B
+import qualified Data.Default                         as Default
+import qualified Data.Pool                            as Pool
+import qualified Data.Text.Lazy                       as LazyText
+import qualified Database.PostgreSQL.Simple           as PGS
+import qualified Network.Wai                          as Wai
+import qualified Network.Wai.Handler.Warp             as NetworkHandler
 import qualified Network.Wai.Middleware.RequestLogger as MiddlewareLogging
-import qualified Web.Scotty.Trans as Scotty
+import qualified Web.Scotty.Trans                     as Scotty
 
-import qualified Environment as E
+import qualified Environment                          as E
 
 
 
@@ -47,10 +47,10 @@ type Error   = LazyText.Text
 -- Setup
 
 data Config = Config
-  { connPool :: Pool.Pool PGS.Connection
-  , port :: Int
+  { connPool    :: Pool.Pool PGS.Connection
+  , port        :: Int
   , environment :: E.Environment
-  , staticSalt :: B.ByteString
+  , staticSalt  :: B.ByteString
   }
 
 
@@ -80,7 +80,7 @@ getOptions c@Config{..} = Default.def
 loggingM :: E.Environment -> Wai.Middleware
 loggingM E.Development = MiddlewareLogging.logStdoutDev
 loggingM E.Production  = MiddlewareLogging.logStdout
-loggingM E.Test = id
+loggingM E.Test        = id
 
 
 -- Application Config

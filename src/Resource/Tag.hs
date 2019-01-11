@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE OverloadedStrings   #-}
 
 
 module Resource.Tag
@@ -15,10 +15,10 @@ module Resource.Tag
   ) where
 
 
-import qualified Init as I
+import qualified Init            as I
+import qualified Storage.Tag     as ST
 import qualified Type.Pagination as TP
-import qualified Type.Tag as TT
-import qualified Storage.Tag as ST
+import qualified Type.Tag        as TT
 
 
 

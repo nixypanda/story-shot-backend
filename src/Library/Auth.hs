@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 
@@ -11,21 +11,21 @@ module Library.Auth
   ) where
 
 
-import Data.Monoid ((<>))
+import           Data.Monoid                ((<>))
 
-import qualified Control.Monad as M
-import Data.Char as Char
+import qualified Control.Monad              as M
+import           Data.Char                  as Char
 
-import qualified Data.Text as Text
-import qualified Data.ByteString as B
-import qualified Data.Text.Encoding as Encoding
-import qualified Data.Random as Random
+import qualified Crypto.BCrypt              as BCrypt
 import qualified Data.Attoparsec.ByteString as P
-import qualified Data.ByteString.Base64 as B64
-import qualified Network.Wai as Wai
-import qualified Crypto.BCrypt as BCrypt
+import qualified Data.ByteString            as B
+import qualified Data.ByteString.Base64     as B64
+import qualified Data.Random                as Random
+import qualified Data.Text                  as Text
+import qualified Data.Text.Encoding         as Encoding
+import qualified Network.Wai                as Wai
 
-import qualified Type.AppError as TAe
+import qualified Type.AppError              as TAe
 
 
 type AuthHeader =
@@ -40,7 +40,7 @@ extractAuth r =
     case [v | (k, v) <- headers, k == "Authorization"] of
       [auth] ->
         case P.parseOnly authHeaderParser auth of
-          Left e -> Left $ TAe.InvalidInput $ Text.pack e
+          Left e    -> Left $ TAe.InvalidInput $ Text.pack e
           Right res -> Right res
 
       _ -> Left TAe.RequiresAuth

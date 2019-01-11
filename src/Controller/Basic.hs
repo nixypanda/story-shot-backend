@@ -11,11 +11,11 @@ module Controller.Basic
   ) where
 
 
-import qualified Data.Aeson as DA
+import qualified Data.Aeson                as DA
 import qualified Network.HTTP.Types.Status as HTTPStatus
-import qualified Web.Scotty.Trans as WST
+import qualified Web.Scotty.Trans          as WST
 
-import qualified Init as I
+import qualified Init                      as I
 
 
 defaultH :: I.Environment -> I.Error -> I.ActionA
@@ -23,8 +23,8 @@ defaultH env err = do
   WST.status HTTPStatus.status500
   WST.json $ case env of
        I.Development -> DA.object ["error" DA..= WST.showError err]
-       I.Production -> DA.Null
-       I.Test -> DA.object ["error" DA..= WST.showError err]
+       I.Production  -> DA.Null
+       I.Test        -> DA.object ["error" DA..= WST.showError err]
 
 
 notFoundA :: I.ActionA

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 
@@ -10,7 +10,7 @@ module Type.Pagination
 
 import qualified GHC.Generics as Generics
 
-import qualified Data.Aeson as DA
+import qualified Data.Aeson   as DA
 import qualified Data.Default as Default
 
 
@@ -20,8 +20,8 @@ import qualified Data.Default as Default
 data Offset = Offset
   { total :: Int
   , pages :: Int
-  , page :: Int
-  , size :: Int
+  , page  :: Int
+  , size  :: Int
   } deriving (Show, Eq)
 
 

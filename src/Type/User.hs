@@ -1,12 +1,12 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 
 module Type.User
@@ -39,46 +39,46 @@ module Type.User
   ) where
 
 
-import Data.Monoid ((<>))
-import Data.Aeson ((.=), (.:))
+import           Data.Aeson                 ((.:), (.=))
+import           Data.Monoid                ((<>))
 
-import qualified Data.Time as DT
-import qualified GHC.Generics as Generics
-import qualified Data.ByteString as B
+import qualified Data.ByteString            as B
+import qualified Data.Time                  as DT
+import qualified GHC.Generics               as Generics
 
-import qualified Data.Text as Text
+import qualified Data.Aeson                 as Aeson
 import qualified Data.Profunctor.Product.TH as ProductProfunctor
-import qualified Data.Aeson as Aeson
-import qualified Opaleye as O
+import qualified Data.Text                  as Text
+import qualified Opaleye                    as O
 
-import qualified Class.Resource as CR
-import qualified Type.Or as TO
-import qualified Type.Author as TA
+import qualified Class.Resource             as CR
+import qualified Type.Author                as TA
+import qualified Type.Or                    as TO
 
 
 
 -- Strangely Polymorphic data type (Internal Use)
 
 data User' id' username displayName password author createdAt updatedAt = User
-  { _userID :: id'
-  , _userName :: username
-  , _userDN :: displayName
-  , _userPass :: password
+  { _userID     :: id'
+  , _userName   :: username
+  , _userDN     :: displayName
+  , _userPass   :: password
   , _userAuthor :: author
-  , _createdAt :: createdAt
-  , _updatedAt :: updatedAt
+  , _createdAt  :: createdAt
+  , _updatedAt  :: updatedAt
   } deriving (Eq, Show, Generics.Generic)
 
 
 data PGUser' userID userName displayName password author salt createdAt updatedAt = PGUser
-  { _pgUserID :: userID
-  , _pgUserName :: userName
-  , _pgUserDN :: displayName
-  , _pgUserPass :: password
-  , _pgUserAuthor :: author
+  { _pgUserID      :: userID
+  , _pgUserName    :: userName
+  , _pgUserDN      :: displayName
+  , _pgUserPass    :: password
+  , _pgUserAuthor  :: author
   , _pgDynamicSalt :: salt
-  , _pgCreatedAt :: createdAt
-  , _pgUpdatedAt :: updatedAt
+  , _pgCreatedAt   :: createdAt
+  , _pgUpdatedAt   :: updatedAt
   } deriving (Eq, Show, Generics.Generic)
 
 

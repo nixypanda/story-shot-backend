@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE InstanceSigs        #-}
+{-# LANGUAGE OverloadedStrings   #-}
 
 
 module Resource.Story
@@ -19,17 +19,17 @@ module Resource.Story
 
 import qualified Control.Monad.IO.Class as MIO
 
-import qualified Data.Random as Rand
+import qualified Data.Random            as Rand
 
-import qualified Init as I
-import qualified Type.Include as Include
-import qualified Class.Resource as CR
-import qualified Type.Pagination as TP
-import qualified Type.Story as TS
-import qualified Type.Author as TA
-import qualified Type.Tag as TT
-import qualified Storage.Story as SS
-import qualified Library.Link as LL
+import qualified Class.Resource         as CR
+import qualified Init                   as I
+import qualified Library.Link           as LL
+import qualified Storage.Story          as SS
+import qualified Type.Author            as TA
+import qualified Type.Include           as Include
+import qualified Type.Pagination        as TP
+import qualified Type.Story             as TS
+import qualified Type.Tag               as TT
 
 
 
@@ -78,7 +78,7 @@ _fromMPGStory includes mstory =
     Just pgstory -> do
       mlstory <- _fromPGStory includes pgstory
       case mlstory of
-        Nothing -> return Nothing
+        Nothing     -> return Nothing
         Just lstory -> return $ Just lstory
 
 
