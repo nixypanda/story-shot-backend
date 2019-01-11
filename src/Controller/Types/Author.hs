@@ -5,13 +5,14 @@
 module Controller.Types.Author where
 
 
-import Prelude hiding (id)
 import           Data.Aeson   ((.=))
 import           Data.Monoid  ((<>))
+import           Prelude      hiding (id)
 
 import qualified Data.Aeson   as Aeson
 import qualified Data.Text    as Text
-import Domain.Types (AuthorPut, AuthorInsert, AuthorBase(..), Author(..))
+import           Domain.Types (Author (..), AuthorBase (..), AuthorInsert,
+                               AuthorPut)
 
 
 instance Aeson.FromJSON AuthorPut

@@ -22,7 +22,7 @@ module Storage.Types.Author
   ) where
 
 
-import Prelude hiding (id)
+import           Prelude                    hiding (id)
 
 import qualified Data.Time                  as DT
 import qualified GHC.Generics               as Generics
@@ -31,7 +31,7 @@ import qualified Data.Profunctor.Product.TH as ProductProfunctor
 import qualified Data.Text                  as Text
 import qualified Opaleye                    as O
 
-import Domain.Types (AuthorInsert(..), AuthorPut(..))
+import           Domain.Types               (AuthorInsert (..), AuthorPut (..))
 
 
 

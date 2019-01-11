@@ -1,3 +1,3 @@
 module Storage.Types where
 
-import Storage.Types.Author
+import           Storage.Types.Author

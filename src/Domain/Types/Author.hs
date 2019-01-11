@@ -1,5 +1,5 @@
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Domain.Types.Author
     ( Author(..)
@@ -9,17 +9,17 @@ module Domain.Types.Author
     ) where
 
 
-import qualified Data.Text as Text
-import qualified Data.Time as DT
-import qualified GHC.Generics               as Generics
+import qualified Data.Text    as Text
+import qualified Data.Time    as DT
+import qualified GHC.Generics as Generics
 
 
 data Author =
   Author
-    { id   :: Int
-    , name :: Text.Text
-    , createdAt  :: DT.UTCTime
-    , updatedAt  :: DT.UTCTime
+    { id        :: Int
+    , name      :: Text.Text
+    , createdAt :: DT.UTCTime
+    , updatedAt :: DT.UTCTime
     } deriving (Eq, Show, Generics.Generic)
 
 
@@ -34,7 +34,7 @@ newtype AuthorBase = AuthorBase
 
 
 data AuthorPut = AuthorPut
-    { id      :: Int
+    { id   :: Int
     , name :: Text.Text
     } deriving (Eq, Show, Generics.Generic)
 
