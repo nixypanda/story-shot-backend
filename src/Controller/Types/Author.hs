@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
@@ -9,8 +8,6 @@ module Controller.Types.Author where
 import Prelude hiding (id)
 import           Data.Aeson   ((.=))
 import           Data.Monoid  ((<>))
-
-import qualified Data.Time    as DT
 
 import qualified Data.Aeson   as Aeson
 import qualified Data.Text    as Text
