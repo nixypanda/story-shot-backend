@@ -19,11 +19,15 @@ library
                      , Class.Resource
 
                      , Domain.Types
+                     , Domain.Types.Author
 
                      , Controller.Types
+                     , Controller.Types.Author
 
                      , Storage.Types
+                     , Storage.Types.Author
                      , Storage.Repos
+                     , Storage.Repos.Authors
 
                      , Init
                      , Environment

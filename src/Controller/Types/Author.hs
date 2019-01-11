@@ -13,6 +13,7 @@ import qualified Data.Aeson   as Aeson
 import qualified Data.Text    as Text
 import           Domain.Types (Author (..), AuthorBase (..), AuthorInsert,
                                AuthorPut)
+import qualified Class.Resource             as CR
 
 
 instance Aeson.FromJSON AuthorPut
@@ -38,6 +39,17 @@ instance Aeson.ToJSON AuthorBase where
     , "type" .= ("author" :: Text.Text)
     , "link" .= ((Text.pack $ "/author/" <> show id) :: Text.Text)
     ]
+
+
+instance CR.Resource Author where
+  rid = id
+  type' _ = "author"
+  createdAt = createdAt
+  updatedAt = updatedAt
+
+instance CR.ShortResource AuthorBase where
+  srid = id
+  srType' _ = "author"
 
 
 -- Valid Request Hints

@@ -27,20 +27,25 @@ import qualified Type.Doc            as TD
 import qualified Type.Meta           as TM
 
 
+import Controller.Types.Author
+import Domain.Types.Author
+import Storage.Repos.Authors (createAuthor, createAuthors)
+
+
 -- CREATE
 
 post :: I.ActionA
 post = do
-  authorInsertObj :: TA.AuthorInsert <- CU.extractData TA.validAuthorInsertObject
-  author <- MonadT.lift $ RA.createAuthor authorInsertObj
+  authorInsertObj :: AuthorInsert <- CU.extractData validAuthorInsertObject
+  author <- MonadT.lift $ createAuthor authorInsertObj
   let authorResource = TM.indexDoc' author
   Scotty.json authorResource
 
 
 postBatch :: I.ActionA
 postBatch = do
-  authorInsertObjs :: [TA.AuthorInsert] <- CU.extractData TA.validAuthorInsertObject
-  authors <- MonadT.lift $ RA.createAuthors authorInsertObjs
+  authorInsertObjs :: [AuthorInsert] <- CU.extractData validAuthorInsertObject
+  authors <- MonadT.lift $ createAuthors authorInsertObjs
   let authorResources = TM.docMulti authors
   Scotty.json authorResources
 
