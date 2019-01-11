@@ -43,9 +43,9 @@ getDBConfig :: IO PGS.ConnectInfo
 getDBConfig = PGS.ConnectInfo
   <$> Utils.fromMaybeEnv "localhost" "DB_URL"
   <*> Utils.fromMaybeEnv 5432 "DB_PORT"
-  <*> Utils.fromMaybeEnv "story" "DB_USER"
-  <*> Utils.fromMaybeEnv "story-shot" "DB_PASS"
-  <*> Utils.fromMaybeEnv "stories" "DB_NAME"
+  <*> Utils.fromMaybeEnv "sherub" "DB_USER"
+  <*> Utils.fromMaybeEnv "" "DB_PASS"
+  <*> Utils.fromMaybeEnv "story_shots" "DB_NAME"
 
 
 -- Read Environment
