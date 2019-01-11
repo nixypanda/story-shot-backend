@@ -22,6 +22,8 @@ library
 
                      , Controller.Types
 
+                     , Storage.Types
+
                      , Init
                      , Environment
                      , Type.Genre
