@@ -4,8 +4,8 @@
 module Domain.Types.Author
     ( Author(..)
     , AuthorBase(..)
-    , AuthorInsert
-    , AuthorPut
+    , AuthorInsert(..)
+    , AuthorPut(..)
     ) where
 
 
@@ -35,7 +35,7 @@ newtype AuthorBase = AuthorBase
 
 data AuthorPut = AuthorPut
     { id      :: Int
-    , newName :: Text.Text
+    , name :: Text.Text
     } deriving (Eq, Show, Generics.Generic)
 
 
