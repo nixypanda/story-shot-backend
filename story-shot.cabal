@@ -18,6 +18,8 @@ library
   exposed-modules:     Lib
                      , Class.Resource
 
+                     , Domain.Types
+
                      , Init
                      , Environment
                      , Type.Genre
