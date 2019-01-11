@@ -20,6 +20,8 @@ library
 
                      , Domain.Types
 
+                     , Controller.Types
+
                      , Init
                      , Environment
                      , Type.Genre
